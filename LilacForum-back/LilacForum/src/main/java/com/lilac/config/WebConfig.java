@@ -3,10 +3,10 @@ package com.lilac.config;
 import com.lilac.interceptor.LoginCheckInterceptor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.servlet.config.annotation.CorsRegistry;
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
-import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 @Slf4j
@@ -15,12 +15,15 @@ public class WebConfig implements WebMvcConfigurer {
 
     @Autowired
     private LoginCheckInterceptor loginCheckInterceptor;
-
+    // 从配置文件中读取允许的前端地址
+    @Value("${cors.allowedOrigins}")
+    private String allowedOrigins;
     @Override
     public void addCorsMappings(CorsRegistry registry) {
-        //跨域
+        // 使用配置的前端地址来允许跨域
         registry.addMapping("/**")
-                .allowedOrigins("http://localhost:5173")  // 前端的地址
+                .allowedOrigins(allowedOrigins.split(","))
+                .allowedOrigins("http://101.37.252.85")
                 .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
                 .allowedHeaders("*")
                 .allowCredentials(true);

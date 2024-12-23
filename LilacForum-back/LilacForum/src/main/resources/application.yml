@@ -1,8 +1,9 @@
 spring:
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
-    url: jdbc:mysql://localhost:3306/lilacforum
-    username: root
+    url: jdbc:mysql://101.37.252.85:3306/lilacforum
+#    101.37.252.85
+    username: lilac
     password: 3458
   servlet:
     multipart:
@@ -14,6 +15,8 @@ spring:
 #  web:
 #    resources:
 #      static-locations: file:D:/webServer/uploads/
+cors:
+  allowedOrigins: "http://101.37.252.85:5173,http://localhost:5173"
 
 
 mybatis:
@@ -29,3 +32,4 @@ aliyun:
 logging:
   level:
     org.springframework.jdbc.support.JdbcTransactionManager: debug
+    com.zaxxer.hikari: debug

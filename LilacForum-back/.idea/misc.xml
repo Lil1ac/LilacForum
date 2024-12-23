@@ -5,8 +5,6 @@
     <option name="originalFiles">
       <list>
         <option value="$PROJECT_DIR$/LilacForum/pom.xml" />
-        <option value="$PROJECT_DIR$/aliyun-oss-spring-boot-starter/pom.xml" />
-        <option value="$PROJECT_DIR$/aliyun-oss-spring-boot-autoconfigure/pom.xml" />
       </list>
     </option>
   </component>

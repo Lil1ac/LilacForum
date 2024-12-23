@@ -1,9 +1,10 @@
 import axios from 'axios';
 
+// 使用 Vite 的环境变量方式获取 API 地址和请求超时时间
 const instance = axios.create({
-  baseURL: 'http://localhost:8080/api', // 替换为你的 API 基础 URL
-  timeout: 10000, // 请求超时时间
-});
+  baseURL: import.meta.env.VITE_APP_BASEURL + '/api',
+  timeout: 30000
+})
 
 instance.interceptors.request.use(config => {
   const token = localStorage.getItem('token');
