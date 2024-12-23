@@ -1,8 +1,13 @@
 <template>
   <div :class="['welcome-container', { 'fade-out': isEntering }]">
-    <video autoplay loop muted playsinline class="background-video" @loadeddata="handleVideoLoaded">
+    <!-- <video autoplay loop muted playsinline class="background-video" @loadeddata="handleVideoLoaded">
       <source src="@/assets/touko.mp4" type="video/mp4" />
-    </video>
+    </video> -->
+    <img 
+      src="@/assets/touko.png" 
+      alt="Background" 
+      class="background-image" 
+    />
     <div v-if="isVideoLoaded" class="overlay"></div>
     <transition name="fade-slide">
       <div v-if="isVideoLoaded" class="welcome-content">

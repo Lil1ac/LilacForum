@@ -2,9 +2,10 @@
   <div id="app">
     <!-- 背景视频 -->
     <div v-if="showBackgroundVideo" class="background-video">
-      <video autoplay muted loop playsinline>
+      <!-- <video autoplay muted loop playsinline>
         <source src="@/assets/ginka.mp4" type="video/mp4" />
-      </video>
+      </video> -->
+      <img src="@/assets/ginka.png" alt="Background" />
     </div>
 
     <!-- 路由视图 -->
@@ -34,7 +35,7 @@ body,
   background: transparent;
 }
 
-.background-video video {
+.background-video img {
   position: fixed;
   top: 0;
   left: 0;
