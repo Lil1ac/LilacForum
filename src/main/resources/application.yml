@@ -1,0 +1,31 @@
+spring:
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://localhost:3306/lilacforum
+    username: root
+    password: 3458
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 100MB
+  mvc:
+    servlet:
+      path: /api
+#  web:
+#    resources:
+#      static-locations: file:D:/webServer/uploads/
+
+
+mybatis:
+  configuration:
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+    map-underscore-to-camel-case: true
+
+aliyun:
+  oss:
+    endpoint: https://oss-cn-hangzhou.aliyuncs.com
+    bucketName: web-demo-lilac
+
+logging:
+  level:
+    org.springframework.jdbc.support.JdbcTransactionManager: debug
