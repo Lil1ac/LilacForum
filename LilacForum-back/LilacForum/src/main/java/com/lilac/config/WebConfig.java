@@ -23,7 +23,6 @@ public class WebConfig implements WebMvcConfigurer {
         // 使用配置的前端地址来允许跨域
         registry.addMapping("/**")
                 .allowedOrigins(allowedOrigins.split(","))
-                .allowedOrigins("http://101.37.252.85")
                 .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
                 .allowedHeaders("*")
                 .allowCredentials(true);

@@ -16,7 +16,7 @@ spring:
 #    resources:
 #      static-locations: file:D:/webServer/uploads/
 cors:
-  allowedOrigins: "http://101.37.252.85:5173,http://localhost:5173"
+  allowedOrigins: "http://101.37.252.85:80,http://101.37.252.85,http://localhost:5173"
 
 
 mybatis:
