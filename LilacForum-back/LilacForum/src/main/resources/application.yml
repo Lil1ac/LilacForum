@@ -1,9 +1,9 @@
 spring:
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
-    url: jdbc:mysql://101.37.252.85:3306/lilacforum
+    url: jdbc:mysql://localhost:3306/lilacforum
 #    101.37.252.85
-    username: lilac
+    username: root
     password: 3458
   servlet:
     multipart:
