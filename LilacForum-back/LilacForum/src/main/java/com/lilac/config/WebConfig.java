@@ -37,6 +37,7 @@ public class WebConfig implements WebMvcConfigurer {
                 .excludePathPatterns("/login")    // 排除登录请求
                 .excludePathPatterns("/register") // 排除注册请求
                 .excludePathPatterns("/public/**") // 排除公共资源请求（可根据需要调整）
+                .excludePathPatterns("/ws/**" )
                 .excludePathPatterns("/error");   // 排除错误处理请求（如果有的话）
     }
 

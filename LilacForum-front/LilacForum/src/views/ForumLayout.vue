@@ -8,6 +8,7 @@
           <el-menu-item index="HomePage">主页</el-menu-item>
           <el-menu-item index="Sections">板块</el-menu-item>
           <el-menu-item index="Announcements">公告</el-menu-item>
+          <el-menu-item index="Chat">聊天室</el-menu-item>
         </el-menu>
 
         <!-- 搜索框 -->
@@ -89,6 +90,7 @@ const handleMenuSelect = (index: string) => {
     HomePage: 'HomePage',
     Sections: 'Sections',
     Announcements: 'Announcements',
+    Chat:'Chat'
   };
   router.push({ name: routeMap[index] });
 };

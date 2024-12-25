@@ -2,7 +2,7 @@ import axios from 'axios';
 
 // 使用 Vite 的环境变量方式获取 API 地址和请求超时时间
 const instance = axios.create({
-  baseURL: import.meta.env.VITE_APP_BASEURL + '/api',
+  baseURL: import.meta.env.VITE_APP_BASEURL,
   timeout: 30000
 })
 

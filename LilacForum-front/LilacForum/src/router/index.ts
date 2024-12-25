@@ -7,10 +7,12 @@ import Announcements from '@/views/Announcements.vue';
 import EditProfile from '@/views/EditProfile.vue'; // 修改个人信息页面
 import UserProfile from '@/views/UserProfile.vue'; // 展示其他用户信息页面
 import Login from '@/views/Login.vue';
+import Chat from '@/views/Chat.vue';
 import Register from '@/views/Register.vue';
 import SectionDetail from '@/views/SectionDetail.vue'; // 具体板块页面
 import PostDetail from '@/views/PostDetail.vue'; // 帖子详情页面
 import SearchResults from '@/views/SearchResults.vue'; // 搜索结果页面
+
 
 const routes = [
   {
@@ -79,6 +81,11 @@ const routes = [
           query: route.query.q,
           mode: route.query.mode
         })
+      },
+      {
+        path: 'chat',
+        component: Chat,
+        name: 'Chat'
       }
     ]
   },
