@@ -23,7 +23,7 @@
       </el-dialog>
 
       <!-- 其他用户信息表单 -->
-      <el-form :model="userInfo" :rules="rules" label-width="120px" class="form">
+      <el-form :model="userInfo" :rules="rules" label-width="120px" class="form" ref="userForm">
         <el-form-item label="用户名">
           <el-input v-model="userInfo.username" :disabled="true"></el-input>
         </el-form-item>
@@ -61,11 +61,16 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue';
-import { ElMessage } from 'element-plus';
+import { ElMessage } from 'element-plus'; // 确保从 'element-plus' 导入 ElMessage
 import 'cropperjs/dist/cropper.css';
 import { useUserStore } from '@/stores/userStore';
 import { getUserInfo, updateUserInfo } from '@/api/user';
 import type { User } from '@/interface/User';
+import { ElForm } from 'element-plus';
+import type { FormItemRule } from 'element-plus'; // 使用 type-only import
+
+// 定义 userForm 作为一个 ref，并指定它的类型为 ElForm
+const userForm = ref<typeof ElForm | null>(null);
 
 const userInfo = ref<User>({
   uid: 0,
@@ -79,17 +84,26 @@ const userInfo = ref<User>({
   bio: '',
   avatar: 'https://via.placeholder.com/150',
   role: ''
-
 });
 
 const isEditing = ref(false);
 
-const rules = ref({
-  email: [
-    { required: true, message: '请输入邮箱地址', trigger: 'blur' },
-    { type: 'email', message: '邮箱格式不正确', trigger: ['blur', 'change'] }
-  ]
-});
+const rules = ref<Record<string, Array<FormItemRule>>>(
+    {
+      email: [
+        {
+          required: true,
+          message: '请输入邮箱地址',
+          trigger: 'blur'
+        },
+        {
+          type: 'email',
+          message: '邮箱格式不正确',
+          trigger: ['blur', 'change']
+        }
+      ]
+    }
+);
 
 const userStore = useUserStore();
 
@@ -103,28 +117,23 @@ const fetchUserInfo = async () => {
     userInfo.value = await getUserInfo(userId);
     imageUrl.value = userInfo.value.avatar; // 设置初始图片为当前头像
   } catch (error) {
-    throw error
+    throw error;
   }
 };
-
 
 import ImageUpload from '@/components/ImageUpload.vue';
 
 const showAvatarModal = ref(false);
-const imageUrl = ref<string>(''); // 用于控制显示加号图标或裁剪图
+const imageUrl = ref<string>('');
 const imageEditor = ref<InstanceType<typeof ImageUpload> | null>(null);
 
-// 打开头像编辑弹窗
 const openAvatarModal = () => {
-
   imageEditor.value?.resetImageUrl(userInfo.value.avatar);
   showAvatarModal.value = true;
 };
 
-//上传后的逻辑
 const handleAvatarSave = async (avatarUrl: string) => {
   userInfo.value.avatar = avatarUrl;
-  //更新用户信息
   await updateUserInfo(userInfo.value);
   showAvatarModal.value = false;
   if (userStore.userId) {
@@ -133,20 +142,17 @@ const handleAvatarSave = async (avatarUrl: string) => {
   showAvatarModal.value = false;
 };
 
-//取消后的逻辑
 const handleAvatarCancel = () => {
   showAvatarModal.value = false;
-}
+};
 
 const triggerConfirmUpload = () => {
   if (imageEditor.value) {
     imageEditor.value.confirmUpload((backgroundUrl) => {
-      // 设置头像 URL
       handleAvatarSave(backgroundUrl);
     });
   }
 };
-
 
 const triggerCancelUpload = () => {
   if (imageEditor.value) {
@@ -154,13 +160,17 @@ const triggerCancelUpload = () => {
   }
 };
 
-
 const saveUserInfo = async () => {
   try {
-    await updateUserInfo(userInfo.value);
-    isEditing.value = false;
+    const isValid = await userForm.value?.validate();
+    if (isValid) {
+      await updateUserInfo(userInfo.value);
+      isEditing.value = false;
+    } else {
+      ElMessage.error('请检查输入的邮箱格式');
+    }
   } catch (error) {
-    throw error;
+    console.error(error);
   }
 };
 
@@ -175,7 +185,6 @@ const cancelEditing = () => {
 onMounted(() => {
   fetchUserInfo();
 });
-
 </script>
 
 <style scoped>

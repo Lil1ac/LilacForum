@@ -13,7 +13,7 @@
     "paths": {
       "@/*": ["*"]
     },
-    "types": ["element-plus/global"],
+    "types": ["element-plus/global", "@element-plus/types"],
     "verbatimModuleSyntax": true
   }
 }
