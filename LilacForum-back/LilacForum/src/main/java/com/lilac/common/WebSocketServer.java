@@ -3,6 +3,8 @@ package com.lilac.common;
 import cn.hutool.json.JSONArray;
 import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
+import com.lilac.service.impl.ImSingleServiceImpl;
+import jakarta.annotation.Resource;
 import jakarta.websocket.*;
 import jakarta.websocket.server.PathParam;
 import jakarta.websocket.server.ServerEndpoint;
@@ -25,6 +27,11 @@ public class WebSocketServer {
      * 记录当前在线连接数
      */
     public static final Map<String, Session> onlineUsers = new ConcurrentHashMap<>();
+
+    @Resource
+    ImSingleServiceImpl imSingleServiceImpl;
+
+    static ImSingleServiceImpl staticImSingleServiceImpl;
 
     /**
      * 连接建立成功调用的方法

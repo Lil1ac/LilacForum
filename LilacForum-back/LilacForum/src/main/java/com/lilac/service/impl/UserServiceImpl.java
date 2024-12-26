@@ -8,6 +8,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
+
 
 @Service
 @Transactional
@@ -27,5 +29,10 @@ public class UserServiceImpl implements UserService {
     @Override
     public void deleteUser(Integer id) {
         userMapper.deleteUser(id);
+    }
+
+    @Override
+    public List<User> getAllUsers() {
+        return userMapper.getAllUsers();
     }
 }

@@ -3,6 +3,8 @@ package com.lilac.mapper;
 import com.lilac.pojo.User;
 import org.apache.ibatis.annotations.*;
 
+import java.util.List;
+
 @Mapper
 public interface UserMapper {
 
@@ -17,4 +19,6 @@ public interface UserMapper {
     void updateUser(User user);
 
     void deleteUser(int id);
+
+    List<User> getAllUsers();
 }

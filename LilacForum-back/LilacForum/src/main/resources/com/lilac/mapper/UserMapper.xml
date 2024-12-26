@@ -66,4 +66,9 @@
         WHERE id = #{id}
     </delete>
 
+    <!-- 查询所有用户 -->
+    <select id="getAllUsers" resultType="com.lilac.pojo.User">
+        SELECT *
+        FROM user
+    </select>
 </mapper>
