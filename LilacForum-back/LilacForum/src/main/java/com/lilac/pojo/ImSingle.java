@@ -4,6 +4,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.time.LocalDateTime;
 import java.util.Date;
 
 @Data
@@ -12,11 +13,9 @@ import java.util.Date;
 public class ImSingle {
     private Integer id;
     private String content;
-    private String fromUser;
-    private String fromAvatar;
-    private Date time;
+    private Integer fromUserId;
+    private LocalDateTime time;
     private String type;
-    private String toUser;
-    private String toAvatar;
+    private Integer toUserId;
     private Integer isRead;
 }

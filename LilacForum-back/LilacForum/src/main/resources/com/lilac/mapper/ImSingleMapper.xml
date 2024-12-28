@@ -4,21 +4,21 @@
 
     <!-- 插入一条消息记录 -->
     <insert id="insertSelective" parameterType="com.lilac.pojo.ImSingle">
-        INSERT INTO im_single (content, from_user, from_avatar, time, type, to_user, to_avatar, is_read)
-        VALUES (#{content}, #{fromUser}, #{fromAvatar}, #{time}, #{type}, #{toUser}, #{toAvatar}, #{isRead})
+        INSERT INTO imSingle (content, from_user_id, time, type, to_user_id, is_read)
+        VALUES (#{content}, #{fromUserId}, #{time}, #{type}, #{toUserId}, #{isRead})
     </insert>
 
     <!-- 根据用户名查找消息记录 -->
     <select id="findByUsername" parameterType="map" resultType="com.lilac.pojo.ImSingle">
         SELECT * FROM imSingle
-        WHERE (from_user = #{fromUser} AND to_user = #{toUser})
-           OR (from_user = #{toUser} AND to_user = #{fromUser})
+        WHERE (from_user_id = #{fromUserId} AND to_user_id = #{toUserId})
+           OR (from_user_id = #{toUserId} AND to_user_id = #{fromUserId})
         ORDER BY time ASC
     </select>
 
     <!-- 更新消息为已读 -->
     <update id="updateByPrimaryKey" parameterType="com.lilac.pojo.ImSingle">
-        UPDATE im_single
+        UPDATE imSingle
         SET is_read = 1
         WHERE id = #{id} AND is_read = 0
     </update>
@@ -26,7 +26,18 @@
     <!-- 查找未读消息 -->
     <select id="findByToUsername" parameterType="String" resultType="com.lilac.pojo.ImSingle">
         SELECT * FROM imSingle
-        WHERE to_user = #{toUser} AND is_read = 0
+        WHERE to_user_id = #{toUserId} AND is_read = 0
+    </select>
+    <select id="findByToUserId" resultType="com.lilac.pojo.ImSingle">
+        SELECT * FROM imSingle
+        WHERE to_user_id = #{toUserId}
+    </select>
+
+<!-- 查找未读消息-->
+    <select id="findMessagesByUserId" resultType="com.lilac.pojo.ImSingle">
+        SELECT * FROM imSingle
+        WHERE (from_user_id = #{fromUserId} AND to_user_id = #{toUserId})
+           OR (from_user_id = #{toUserId} AND to_user_id = #{fromUserId})
     </select>
 
 </mapper>

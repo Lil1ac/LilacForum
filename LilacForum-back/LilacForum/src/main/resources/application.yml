@@ -4,7 +4,7 @@ spring:
     url: jdbc:mysql://localhost:3306/lilacforum
 #    101.37.252.85
     username: root
-    password: Zhangwenhao3458
+    password: 3458
   servlet:
     multipart:
       max-file-size: 10MB

@@ -4,10 +4,10 @@ import type { Message } from '@/interface/Message';
 
 
 // 获取单聊消息接口
-export const fetchMessages = async (fromUser: string, toUser: string): Promise<Message[]> => {
+export const fetchMessages = async (fromUserId: number, toUserId: number): Promise<Message[]> => {
     try {
-        const response = await request.get('/imSingle', {
-            params: { fromUser, toUser }
+        const response = await request.get(`/imSingle`, {
+            params: { fromUserId, toUserId }
         });
         const result = response.data;
         if (result.code === 1) {
@@ -20,23 +20,7 @@ export const fetchMessages = async (fromUser: string, toUser: string): Promise<M
         throw error;
     }
 };
-// 获取未读消息数量接口
-export const fetchUnreadNums = async (toUser: string): Promise<number> => {
-    try {
-        const response = await request.get('/imSingle/unReadNums', {
-            params: { toUsername: toUser }
-        });
-        const result = response.data;
-        if (result.code === 1) {
-            return result.data.unreadNums; // 假设未读消息数量字段为 `unreadNums`
-        } else {
-            throw new Error(result.msg);
-        }
-    } catch (error) {
-        ElMessage.error('获取未读消息数量失败');
-        throw error;
-    }
-};
+
 
 
 // 发送消息接口
@@ -54,3 +38,27 @@ export const sendMessage = async (message: Message): Promise<void> => {
         throw error;
     }
 };
+
+
+// 清空正在聊的用户的未读消息数
+export const setUnReadNums = async (currentUserId: number, chatUserId: number) => {
+    try {
+      // 调用后端接口来清空未读消息数
+      await request.post('/imSingle', {
+        params: { currentUserId, chatUserId }
+      });
+    } catch (error) {
+      console.error('设置未读消息数失败:', error);
+    }
+  };
+  
+  // 用于加载未读消息数的函数
+  export const loadUnReadNums = async (currentUserId: number) => {
+    try {
+      const response = await request.get('/imSingle/unReadNums', {
+        params: { toUserId: currentUserId }
+      });
+    } catch (error) {
+      console.error('加载未读消息数失败:', error);
+    }
+  };

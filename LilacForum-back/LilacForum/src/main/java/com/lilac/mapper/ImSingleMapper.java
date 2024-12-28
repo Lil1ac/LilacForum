@@ -1,5 +1,6 @@
 package com.lilac.mapper;
 
+import com.lilac.dto.ImSingleRequest;
 import com.lilac.pojo.ImSingle;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
@@ -20,4 +21,8 @@ public interface ImSingleMapper {
 
     // 查找未读消息
     List<ImSingle> findByToUsername(@Param("toUser") String toUser);
+
+    List<ImSingle> findByToUserId(Integer toUserId);
+
+    List<ImSingle> findMessagesByUserId(Integer fromUserId, Integer toUserId);
 }
