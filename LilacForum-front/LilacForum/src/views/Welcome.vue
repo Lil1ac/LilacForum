@@ -32,22 +32,28 @@ import { useRouter } from 'vue-router';
 const router = useRouter();
 const isEntering = ref(false);
 const isVideoLoaded = ref(false);
+const hasNavigated = ref(false); // 确保只跳转一次
 
 const enterSite = () => {
+  if (hasNavigated.value) return; // 已经跳转则直接返回
   isEntering.value = true;
+  hasNavigated.value = true; // 标记为已跳转
   setTimeout(() => {
     router.push({ name: 'HomePage' });
-  }, 300); // 提前跳转，避免空白
+  }, 300);
 };
 
-// 自动跳转的逻辑
+// 自动跳转逻辑
 onMounted(() => {
+  if (hasNavigated.value) return; // 如果已跳转，跳过自动跳转逻辑
   setTimeout(() => {
-    isEntering.value = true;
-    setTimeout(() => {
-      router.push({ name: 'HomePage' });
-    }, 1000); // 确保动画和路由跳转同步
-  }, 3000); // 3秒后触发淡出动画，随后跳转
+    if (!hasNavigated.value) { // 再次检查手动跳转标志
+      isEntering.value = true;
+      setTimeout(() => {
+        router.push({ name: 'HomePage' });
+      }, 1000); // 确保动画和路由跳转同步
+    }
+  }, 3000); // 3秒后触发淡出动画
 });
 
 const handleVideoLoaded = () => {

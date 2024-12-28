@@ -1,6 +1,5 @@
 package com.lilac.mapper;
 
-import com.lilac.dto.ImSingleRequest;
 import com.lilac.pojo.ImSingle;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;

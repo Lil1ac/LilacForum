@@ -88,7 +88,7 @@ const router = useRouter();
 const userId = Number(route.params.userId);
 
 const userInfo = ref<User>({
-    uid: 0,
+    id: 0,
     username: '',
     password: '',
     email: '',

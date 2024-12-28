@@ -11,11 +11,12 @@
           <!-- 管理员列表 -->
           <div class="user-list">
             <div class="list-title">管理员</div>
-            <div v-for="user in adminUsers" :key="user.username" class="user-item">
+            <div v-for="user in adminUsers" :key="user.username" class="user-item" @click="selectToUser(user)">
+              <img :src="user.avatar || defaultAvatar" alt="头像" class="user-avatar" />
               <span>{{ user.username }}</span>
-              <el-icon class="el-icon-chat-dot-round icon" @click="selectToUser(user)">
+              <!-- <el-icon class="el-icon-chat-dot-round icon" @click="selectToUser(user)">
                 <ChatDotRound />
-              </el-icon>
+              </el-icon> -->
               <span class="chat-status" v-if="user.id === chatUser.id">chatting...</span>
             </div>
           </div>
@@ -23,11 +24,12 @@
           <!-- 普通用户列表 -->
           <div class="user-list">
             <div class="list-title">普通用户</div>
-            <div v-for="user in normalUsers" :key="user.username" class="user-item">
+            <div v-for="user in normalUsers" :key="user.username" class="user-item" @click="selectToUser(user)">
+              <img :src="user.avatar || defaultAvatar" alt="头像" class="user-avatar" />
               <span>{{ user.username }}</span>
-              <el-icon class="el-icon-chat-dot-round icon" @click="selectToUser(user)">
+              <!-- <el-icon class="el-icon-chat-dot-round icon" @click="selectToUser(user)">
                 <ChatDotRound />
-              </el-icon>
+              </el-icon> -->
               <span class="chat-status" v-if="user.id === chatUser.id">chatting...</span>
             </div>
           </div>
@@ -44,7 +46,7 @@
             <div v-for="item in messages" :key="item.id" class="message-box">
               <!-- 自己 -->
               <div v-if="item.fromUserId === currentUser.id" class="message right">
-                <img :src="item.fromAvatar" alt="头像" class="avatar" />
+
                 <div v-if="item.type === 'text'" class="message-content" v-html="item.content"></div>
                 <div v-if="item.type === 'img'" class="message-content">
                   <el-image :src="item.content" alt="图片" :preview-src-list="[item.content]" @load="scrollToBottom" />
@@ -53,6 +55,7 @@
                   <i class="el-icon-folder-opened"></i>
                   <span>{{ item.content.substring(item.content.indexOf('-') + 1) }}</span>
                 </div>
+                <img :src="item.fromAvatar" alt="头像" class="avatar" />
               </div>
               <!-- 对象 -->
               <div v-else class="message left">
@@ -112,13 +115,13 @@ import { defineComponent, ref, onMounted, onBeforeUnmount } from 'vue';
 import { getUsersByRole } from '@/api/user'; // 引入 API
 import type { User } from '@/interface/User';
 import type { Message } from '@/interface/Message';
-import { fetchMessages,  sendMessage, setUnReadNums, loadUnReadNums } from '@/api/message';
+import { fetchMessages, sendMessage, setUnReadNums, loadUnReadNums } from '@/api/message';
 import { uploadImage } from '@/api/upload';
 import { ElMessage } from 'element-plus';
 import { getUserInfo } from '@/api/user';
 
 
-const circleUrl = 'https://cube.elemecdn.com/3/7c/3ea6beec64369c2642b92c6726f1epng.png';
+const defaultAvatar = 'https://cube.elemecdn.com/3/7c/3ea6beec64369c2642b92c6726f1epng.png';
 
 
 
@@ -135,7 +138,7 @@ export default defineComponent({
       profession: '',
       hobby: '',
       bio: '',
-      avatar: circleUrl, // 你可以用一个默认头像 URL
+      avatar: defaultAvatar, // 你可以用一个默认头像 URL
       role: 'guest',
     });
     const chatUser = ref<User>({
@@ -148,7 +151,7 @@ export default defineComponent({
       profession: '',
       hobby: '',
       bio: '',
-      avatar: circleUrl, // 你可以用一个默认头像 URL
+      avatar: defaultAvatar, // 你可以用一个默认头像 URL
       role: 'guest',
     });
     const adminUsers = ref<User[]>([]);
@@ -175,7 +178,7 @@ export default defineComponent({
             delete user.userId;  // 删除原始的 userId 字段
           }
           currentUser.value = user; // 如果获取到的用户数据有效，再进行赋值
-          const currentUserKey = `${currentUser.value.role}_${currentUser.value.username}`;
+          const currentUserKey = `${currentUser.value.username}`;
           adminUsers.value = await getUsersByRole('ADMIN', currentUserKey);
           normalUsers.value = await getUsersByRole('USER', currentUserKey);
         }
@@ -199,9 +202,12 @@ export default defineComponent({
       socket.value.onmessage = (msg) => {
         if (msg.data) {
           const message: Message = JSON.parse(msg.data);
-          if (message.content && message.toUserId === currentUser.value.id) {
+          // 判断是否是当前用户的消息，如果是，则添加到消息列表中
+          if (message.content && (message.fromUserId === currentUser.value.id && message.toUserId === chatUser.value.id)
+            || (message.fromUserId === chatUser.value.id && message.toUserId === currentUser.value.id)) {
+            console.log('收到消息:', message);
             messages.value.push(message);
-            scrollToBottom(); // 新消息滚动到最底部
+            scrollToBottom(); //  新消息滚动到最底部
           }
           //加载消息数字
           if (chatUser.value.id === message.fromUserId) {
@@ -255,22 +261,31 @@ export default defineComponent({
 
     //发送消息
     const send = () => {
-      const contentEditable = document.getElementById('im-content') as HTMLElement;
-      console.log(contentEditable);
-
       // 确保选择了聊天对象
       if (!chatUser.value) {
         console.log('请选择聊天对象');
         return;
       }
+      // 发送消息
+      if (socket.value) {
+        const message = getMessage();
+        console.log('发送消息:', message);
+        socket.value.send(JSON.stringify(message));  // 通过 WebSocket 发送消息
+      }
+    };
 
+
+
+
+    const getMessage = () => {
       // 确保消息内容不为空
+      const contentEditable = document.getElementById('im-content') as HTMLElement;
       const messageContent = contentEditable ? contentEditable.innerHTML.trim() : '';
+      contentEditable.innerHTML = '';  // 清空文本框内容
       if (!messageContent) {
         console.log('请输入内容');
         return;
       }
-
       // 获取当前时间（假设你需要传送消息的时间）
       const currentTime = new Date().toISOString();  // 使用 ISO 8601 格式
 
@@ -278,66 +293,44 @@ export default defineComponent({
       const message: Message = {
         id: Date.now(),  // 使用时间戳作为唯一的消息 ID
         content: messageContent,  // 消息内容
-        fromUserId: currentUser.value?.id || 0,  // 发送者用户名
-        fromAvatar: currentUser.value?.avatar || circleUrl,  // 发送者头像
+        fromUserId: currentUser.value.id,  // 发送者用户名
+        fromUserName: currentUser.value.username,
+        fromAvatar: currentUser.value.avatar,  // 发送者头像
         time: currentTime,  // 消息时间
         type: 'text',  // 消息类型，这里假设是文本类型
         toUserId: chatUser.value.id,  // 接收者用户名
-        toAvatar: toAvatar.value || '',  // 接收者头像
+        toUserName: chatUser.value.username,
+        toAvatar: chatUser.value.avatar,  // 接收者头像
         isRead: 0  // 初始为未读
       };
-
-      console.log('发送消息:', message);
-
-      // 发送消息
-      if (socket.value) {
-        socket.value.send(JSON.stringify(message));  // 通过 WebSocket 发送消息
-        messages.value.push(message);  // 将消息添加到消息列表
-        contentEditable.innerHTML = '';  // 清空文本框内容
-      }
-
-
+      contentEditable.innerHTML = '';
+      return message;
     };
+
 
 
     // 滚动到底部
     const scrollToBottom = () => {
       const container = document.getElementById('message-container');
       if (container) {
+        console.log('滚动到底部');
         container.scrollTop = container.scrollHeight;
       }
     };
 
-
-
-    // // 获取消息历史
-    // const fetchMessages = async () => {
-    //   try {
-    //     const response = await axios.get('/api/messages'); // 获取消息的接口
-    //     messages.value = response.data;
-    //   } catch (error) {
-    //     console.error('获取消息列表失败:', error);
-    //   }
-    // };
-
     // 选择聊天对象
     const selectToUser = async (user: User) => {
       try {
-
         // 调用获取用户信息的方法
         const targetUser = await getUserInfo(user.id);  // 假设 item 中包含 userId
-
         // 设置当前聊天对象
         chatUser.value = targetUser;
-
         // 设置聊天对象的用户信息
         chatUser.value.username = user.role + user.username;  // 选择用户时拼接用户名和角色
         toAvatar.value = targetUser.avatar;  // 获取用户头像
-
-
         // 如果需要加载其他内容，可以调用 load 方法
         loadMessages(currentUser.value.id, chatUser.value.id);
-
+        scrollToBottom(); // 新消息滚动到最底部
       } catch (error) {
         console.error('获取用户信息失败:', error);
       }
@@ -352,9 +345,10 @@ export default defineComponent({
     // 加载历史消息
     const loadMessages = async (currentUserId: number, chatUserId: number) => {
       try {
-        console.log('加载历史消息:', currentUserId, chatUserId);
         const result = await fetchMessages(currentUserId, chatUserId);
         messages.value = result;
+        scrollToBottom(); // 历史消息滚动到最底部
+        loadUnReadNums(currentUser.value.id); // 更新未读消息数
       } catch (error) {
         console.error('加载消息失败:', error);
       }
@@ -376,6 +370,7 @@ export default defineComponent({
     });
 
     return {
+      defaultAvatar,
       currentUser,
       adminUsers,
       normalUsers,

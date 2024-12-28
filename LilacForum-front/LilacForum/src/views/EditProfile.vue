@@ -68,7 +68,7 @@ import { getUserInfo, updateUserInfo } from '@/api/user';
 import type { User } from '@/interface/User';
 
 const userInfo = ref<User>({
-  uid: 0,
+  id: 0,
   username: '',
   password: '',
   email: '',

@@ -37,14 +37,14 @@ public class ImSingleServiceImpl implements ImService {
         List<ImSingleRequest> result = new ArrayList<>();
         for (ImSingle imSingle : list) {
             // 获取发送者信息
-            String avatar = userMapper.getUserById(imSingle.getFromUserId()).getAvatar();
-            String username = userMapper.getUserById(imSingle.getFromUserId()).getUsername();
+            String fromAvatar = userMapper.getUserById(imSingle.getFromUserId()).getAvatar();
+            String fromUsername = userMapper.getUserById(imSingle.getFromUserId()).getUsername();
             // 获取接收者信息
             String toAvatar = userMapper.getUserById(imSingle.getToUserId()).getAvatar();
-            String toUsername = userMapper.getUserById(imSingle.getFromUserId()).getUsername();
+            String toUsername = userMapper.getUserById(imSingle.getToUserId()).getUsername();
 
             // 构造 ImSingleRequest DTO
-            ImSingleRequest dto = new ImSingleRequest(imSingle, toAvatar, username);
+            ImSingleRequest dto = new ImSingleRequest(imSingle, toAvatar, toUsername, fromAvatar, fromUsername);
 
             // 判断当前消息是否未读且是从对方发来的，如果是，则更新为已读
             if (imSingle.getToUserId().equals(fromUserId) && imSingle.getFromUserId().equals(toUserId) && imSingle.getIsRead() == 0) {
