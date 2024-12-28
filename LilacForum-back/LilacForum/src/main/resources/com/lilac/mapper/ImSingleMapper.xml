@@ -8,14 +8,6 @@
         VALUES (#{content}, #{fromUserId}, #{time}, #{type}, #{toUserId}, #{isRead})
     </insert>
 
-    <!-- 根据用户名查找消息记录 -->
-    <select id="findByUsername" parameterType="map" resultType="com.lilac.pojo.ImSingle">
-        SELECT * FROM imSingle
-        WHERE (from_user_id = #{fromUserId} AND to_user_id = #{toUserId})
-           OR (from_user_id = #{toUserId} AND to_user_id = #{fromUserId})
-        ORDER BY time ASC
-    </select>
-
     <!-- 更新消息为已读 -->
     <update id="updateByPrimaryKey" parameterType="com.lilac.pojo.ImSingle">
         UPDATE imSingle
@@ -23,21 +15,58 @@
         WHERE id = #{id} AND is_read = 0
     </update>
 
-    <!-- 查找未读消息 -->
-    <select id="findByToUsername" parameterType="String" resultType="com.lilac.pojo.ImSingle">
+    <!-- 查找未读消息-->
+    <select id="findByToUserId" resultType="com.lilac.pojo.ImSingle">
         SELECT * FROM imSingle
         WHERE to_user_id = #{toUserId} AND is_read = 0
     </select>
-    <select id="findByToUserId" resultType="com.lilac.pojo.ImSingle">
-        SELECT * FROM imSingle
-        WHERE to_user_id = #{toUserId}
-    </select>
 
-<!-- 查找未读消息-->
+    <!-- 根据用户id查找消息记录-->
     <select id="findMessagesByUserId" resultType="com.lilac.pojo.ImSingle">
         SELECT * FROM imSingle
-        WHERE (from_user_id = #{fromUserId} AND to_user_id = #{toUserId})
-           OR (from_user_id = #{toUserId} AND to_user_id = #{fromUserId})
+        WHERE ((from_user_id = #{fromUserId} AND to_user_id = #{toUserId})
+           OR (from_user_id = #{toUserId} AND to_user_id = #{fromUserId}))
+        ORDER BY time ASC
     </select>
+    <!-- 查询从游标之后的消息，按 message_id 升序排列 -->
+    <select id="findMessagesByCursorAndLimit" resultType="com.lilac.pojo.ImSingle">
+        SELECT *
+        FROM imSingle
+        WHERE ((from_user_id = #{fromUserId} AND to_user_id = #{toUserId})
+        OR (from_user_id = #{toUserId} AND to_user_id = #{fromUserId}))
+        AND id &lt; #{cursor}  <!-- 游标条件，查询小于当前消息ID的消息 -->
+        ORDER BY id desc   <!-- 按消息ID降序排列，保证查询到最新的消息 -->
+        LIMIT #{pageSize}         <!-- 分页限制，返回指定数量的消息 -->
+    </select>
+
+    <!-- 查询最新的消息（没有游标时使用） -->
+    <select id="findMessagesByUserIdAndLimit" resultType="com.lilac.pojo.ImSingle">
+        SELECT *
+        FROM imSingle
+        WHERE ((from_user_id = #{fromUserId} AND to_user_id = #{toUserId})
+        OR (from_user_id = #{toUserId} AND to_user_id = #{fromUserId}))
+        ORDER BY id desc  <!-- 按消息ID降序排列 -->
+        LIMIT #{pageSize}   <!-- 返回指定数量的消息 -->
+    </select>
+    <!-- 查询最后一个未读消息 -->
+    <select id="findLastUnReadMessageId" resultType="integer">
+        SELECT id
+        FROM imSingle
+        WHERE ((from_user_id = #{fromUserId} AND to_user_id = #{toUserId})
+           OR (from_user_id = #{toUserId} AND to_user_id = #{fromUserId}))
+            AND is_read = 0
+        ORDER BY id asc
+        LIMIT 1
+    </select>
+
+    <!-- 批量更新已读状态 -->
+    <update id="updateMessagesAsRead">
+        UPDATE imSingle
+        SET is_read = 1
+        WHERE id >= #{lastUnreadMessageId}
+        AND ((from_user_id = #{fromUserId} AND to_user_id = #{toUserId})
+        OR (from_user_id = #{toUserId} AND to_user_id = #{fromUserId}))
+        AND is_read = 0;
+    </update>
 
 </mapper>

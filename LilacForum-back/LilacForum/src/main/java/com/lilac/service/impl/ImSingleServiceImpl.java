@@ -1,5 +1,7 @@
 package com.lilac.service.impl;
 
+import com.github.pagehelper.PageHelper;
+import com.github.pagehelper.PageInfo;
 import com.lilac.dto.ImSingleRequest;
 import com.lilac.mapper.ImSingleMapper;
 import com.lilac.mapper.UserMapper;
@@ -8,10 +10,7 @@ import com.lilac.service.ImService;
 import jakarta.annotation.Resource;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -22,6 +21,7 @@ public class ImSingleServiceImpl implements ImService {
 
     @Resource
     private UserMapper userMapper;
+
     // 插入单条消息记录
     public ImSingle add(ImSingle imSingle) {
         imSingleMapper.insertSelective(imSingle);
@@ -29,35 +29,43 @@ public class ImSingleServiceImpl implements ImService {
     }
 
     // 根据用户ID查找单聊消息记录
-    public List<ImSingleRequest> findMessagesByUserId(Integer fromUserId, Integer toUserId) {
-        // 查询所有消息
-        List<ImSingle> list = imSingleMapper.findMessagesByUserId(fromUserId, toUserId);
 
-        // 遍历每条消息，填充头像、用户名等信息
-        List<ImSingleRequest> result = new ArrayList<>();
-        for (ImSingle imSingle : list) {
-            // 获取发送者信息
-            String fromAvatar = userMapper.getUserById(imSingle.getFromUserId()).getAvatar();
-            String fromUsername = userMapper.getUserById(imSingle.getFromUserId()).getUsername();
-            // 获取接收者信息
-            String toAvatar = userMapper.getUserById(imSingle.getToUserId()).getAvatar();
-            String toUsername = userMapper.getUserById(imSingle.getToUserId()).getUsername();
 
-            // 构造 ImSingleRequest DTO
-            ImSingleRequest dto = new ImSingleRequest(imSingle, toAvatar, toUsername, fromAvatar, fromUsername);
-
-            // 判断当前消息是否未读且是从对方发来的，如果是，则更新为已读
-            if (imSingle.getToUserId().equals(fromUserId) && imSingle.getFromUserId().equals(toUserId) && imSingle.getIsRead() == 0) {
-                imSingle.setIsRead(1); // 标记为已读
-                imSingleMapper.updateByPrimaryKey(imSingle); // 更新消息状态
-            }
-
-            // 将构建好的 DTO 添加到结果列表
-            result.add(dto);
+    public List<ImSingleRequest> findMessagesByCursor(Integer fromUserId, Integer toUserId, Long cursor, Integer pageSize) {
+        // 查询消息，假设使用 messageId 作为游标
+        List<ImSingle> list;
+        if (cursor == null|| cursor == 0) {
+            // 如果没有传入游标，查询最早的消息
+            list = imSingleMapper.findMessagesByUserIdAndLimit(fromUserId, toUserId, pageSize);
+        } else {
+            // 查询从游标之后的数据
+            list = imSingleMapper.findMessagesByCursorAndLimit(fromUserId, toUserId, cursor, pageSize);
         }
 
+
+        // 获取最后一个未读消息的ID，用于批量更新已读
+        Integer lastUnreadMessageId = imSingleMapper.findLastUnReadMessageId(fromUserId, toUserId);
+        if (lastUnreadMessageId != null) {
+            // 批量更新该未读消息及之后的所有消息为已读
+            imSingleMapper.updateMessagesAsRead(fromUserId, toUserId, lastUnreadMessageId);
+        }
+
+        // 处理查询结果，返回 ImSingleRequest 列表
+        List<ImSingleRequest> result = new ArrayList<>();
+        for (ImSingle imSingle : list) {
+            // 填充消息内容及头像等信息
+            String fromAvatar = userMapper.getUserById(imSingle.getFromUserId()).getAvatar();
+            String fromUsername = userMapper.getUserById(imSingle.getFromUserId()).getUsername();
+            String toAvatar = userMapper.getUserById(imSingle.getToUserId()).getAvatar();
+            String toUsername = userMapper.getUserById(imSingle.getToUserId()).getUsername();
+            // 构造 ImSingleRequest DTO
+            ImSingleRequest dto = new ImSingleRequest(imSingle, toAvatar, toUsername, fromAvatar, fromUsername);
+            result.add(dto);
+        }
+        Collections.reverse(result);
         return result;
     }
+
 
 
     // 获取未读消息的数量
@@ -73,7 +81,4 @@ public class ImSingleServiceImpl implements ImService {
 
         return unReadCounts;  // 返回包含所有未读消息数的 Map
     }
-
-
-
 }

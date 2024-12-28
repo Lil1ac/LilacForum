@@ -12,4 +12,27 @@ const stripHtmlTags = (htmlContent: string): string => {
     // 移除其他 HTML 标签
     return withNewlines.replace(/<[^>]*>/g, '').trim();
 };
-export default { formatDate, stripHtmlTags };
+
+const formatTime = (time: string): string => {
+    const messageDate = new Date(time);
+    const currentDate = new Date();
+
+    // 判断是否为今天
+    const isToday = messageDate.toDateString() === currentDate.toDateString();
+
+    if (isToday) {
+        // 如果是今天，返回时间
+        return messageDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    } else {
+        // 如果是之前的日期，返回日期和时间
+        return messageDate.toLocaleString([], {
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit',
+            hour: '2-digit',
+            minute: '2-digit'
+        });
+    }
+};
+
+export default { formatDate, stripHtmlTags, formatTime };

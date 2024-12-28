@@ -3,12 +3,18 @@ import { ElMessage } from 'element-plus';
 import type { Message } from '@/interface/Message';
 
 
-// 获取单聊消息接口
-export const fetchMessages = async (fromUserId: number, toUserId: number): Promise<Message[]> => {
+// 获取单聊消息接口，支持分页和游标加载
+export const fetchMessages = async (
+  fromUserId: number, 
+  toUserId: number,
+  cursor: number | null = null, // 游标：首次请求时为 null，后续请求使用最后一条消息的 ID
+  pageSize: number = 10 // 每页显示的条数，默认为 20
+): Promise<Message[]> => {
   try {
     const response = await request.get(`/imSingle`, {
-      params: { fromUserId, toUserId }
+      params: { fromUserId, toUserId, cursor, pageSize }
     });
+    
     const result = response.data;
     if (result.code === 1) {
       return result.data; // 返回消息列表
@@ -40,24 +46,20 @@ export const sendMessage = async (message: Message): Promise<void> => {
 };
 
 
-// 清空正在聊的用户的未读消息数
-export const setUnReadNums = async (currentUserId: number, chatUserId: number) => {
-  try {
-    // 调用后端接口来清空未读消息数
-    await request.get('/imSingle', {
-      params: { fromUserId: currentUserId, toUserId: chatUserId }
-    });
-  } catch (error) {
-    console.error('设置未读消息数失败:', error);
-  }
-};
 
 // 用于加载未读消息数的函数
-export const loadUnReadNums = async (currentUserId: number) => {
+export const getUnReadNums = async (currentUserId: number) => {
   try {
     const response = await request.get('/imSingle/unReadNums', {
       params: { toUserId: currentUserId }
     });
+    const result = response.data;
+    if (result.code === 1) {
+      // 成功获取到未读消息数
+      return result.data;
+        } else {
+      throw new Error(result.msg);
+      }
   } catch (error) {
     console.error('加载未读消息数失败:', error);
   }
