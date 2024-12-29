@@ -27,4 +27,6 @@ public interface ImSingleMapper {
     Integer findLastUnReadMessageId(Integer fromUserId, Integer toUserId);
 
     void updateMessagesAsRead(Integer fromUserId, Integer toUserId, Integer lastUnreadMessageId);
+
+    ImSingle getLastMessage(Integer fromUserId, Integer toUserId);
 }

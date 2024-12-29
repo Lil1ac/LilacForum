@@ -9,29 +9,57 @@
         <!-- 管理员列表 -->
         <div class="admin-list">
           <div class="list-title">管理员</div>
-          <div v-for="user in adminUsers" :key="user.username" class="user-item" @click="selectToUser(user)">
-            <img :src="user.avatar || defaultAvatar" alt="头像" class="user-avatar" />
-            <span>{{ user.username }}</span>
-            <span class="chat-status" v-if="user.id === chatUser.id">chatting...</span>
-            <span v-if="unreadCounts[user.id] > 0" class="unread-bubble">
+          <div v-for="user in adminUsers" :key="user.username" class="user-item" @click="selectToUser(user)"
+            :class="{ 'active': selectedUserId === user.id }">
+            <div class="user-left">
+              <img :src="user.avatar || defaultAvatar" alt="头像" class="user-avatar" />
+            </div>
+            <div class="user-info">
+              <div class="username">{{ user.username }}</div>
+              <div class="last-message" v-if="user.lastMessage">
+                <span class="last-message-text">
+                  {{ user.lastMessage.content }}
+                </span>
+              </div>
+            </div>
+            <div v-if="user.lastMessage" class="user-time">
+              <span>{{ formatTime(user.lastMessage.time) }}</span>
+            </div>
+            <div class="unread-bubble" v-if="unreadCounts[user.id] > 0">
               {{ unreadCounts[user.id] }}
-            </span>
+            </div>
           </div>
         </div>
+
+        <!-- 分隔线 -->
+        <div class="divider"></div>
 
         <!-- 普通用户列表 -->
         <div class="normal-user-list">
           <div class="list-title">普通用户</div>
-          <div v-for="user in normalUsers" :key="user.username" class="user-item" @click="selectToUser(user)">
-            <img :src="user.avatar || defaultAvatar" alt="头像" class="user-avatar" />
-            <span>{{ user.username }}</span>
-            <span class="chat-status" v-if="user.id === chatUser.id">chatting...</span>
-            <span v-if="unreadCounts[user.id] > 0" class="unread-bubble">
+          <div v-for="user in normalUsers" :key="user.username" class="user-item" @click="selectToUser(user)"
+            :class="{ 'active': selectedUserId === user.id }">
+            <div class="user-left">
+              <img :src="user.avatar || defaultAvatar" alt="头像" class="user-avatar" />
+            </div>
+            <div class="user-info">
+              <div class="username">{{ user.username }}</div>
+              <div class="last-message" v-if="user.lastMessage">
+                <span class="last-message-text">
+                  {{ user.lastMessage.content }}
+                </span>
+              </div>
+            </div>
+            <div v-if="user.lastMessage" class="user-time">
+              <span>{{ formatTime(user.lastMessage.time) }}</span>
+            </div>
+            <div class="unread-bubble" v-if="unreadCounts[user.id] > 0">
               {{ unreadCounts[user.id] }}
-            </span>
+            </div>
           </div>
         </div>
       </div>
+
 
     </el-card>
 
@@ -88,8 +116,6 @@
         </div>
       </div>
 
-
-
       <div class="chat-footer">
         <!-- 表情面板 -->
         <el-popover placement="top" width="400" trigger="click">
@@ -129,7 +155,7 @@ import { defineComponent, ref, onMounted, onBeforeUnmount } from 'vue';
 import { getUsersByRole } from '@/api/user'; // 引入 API
 import type { User } from '@/interface/User';
 import type { Message } from '@/interface/Message';
-import { fetchMessages, sendMessage, getUnReadNums as getUnReadNum } from '@/api/message';
+import { fetchMessages, sendMessage, getUnReadNum, fetchLastMessage } from '@/api/message';
 import { uploadImage } from '@/api/upload';
 import { ElMessage } from 'element-plus';
 import { getUserInfo } from '@/api/user';
@@ -154,7 +180,7 @@ export default defineComponent({
       profession: '',
       hobby: '',
       bio: '',
-      avatar: defaultAvatar, // 你可以用一个默认头像 URL
+      avatar: defaultAvatar,
       role: 'guest',
     });
     const chatUser = ref<User>({
@@ -167,7 +193,7 @@ export default defineComponent({
       profession: '',
       hobby: '',
       bio: '',
-      avatar: defaultAvatar, // 你可以用一个默认头像 URL
+      avatar: defaultAvatar,
       role: 'guest',
     });
     const adminUsers = ref<User[]>([]);
@@ -181,33 +207,44 @@ export default defineComponent({
     const unreadCounts = ref<{ [key: number]: number }>({});  // 用一个对象来存储每个用户的未读消息数，key 是用户ID，value 是未读消息数
     const newMessage = ref<boolean>(false); // 是否当前对话有新消息
 
-
-
-    // 获取用户列表
+    // 获取用户列表并加载每个用户的最后一条消息
     const fetchUsers = async () => {
       try {
         const userData = localStorage.getItem('user');
-        if (userData) {
-          const user = JSON.parse(userData);
-          if (user.userId) {
-            user.id = user.userId;  // 将 userId 映射为 id
-            delete user.userId;  // 删除原始的 userId 字段
-          }
-          currentUser.value = user; // 如果获取到的用户数据有效，再进行赋值
-          const currentUserKey = `${currentUser.value.username}`;
-          adminUsers.value = await getUsersByRole('ADMIN', currentUserKey);
-          normalUsers.value = await getUsersByRole('USER', currentUserKey);
+        if (!userData) return;
+        const user = JSON.parse(userData);
+        if (user.userId) {
+          user.id = user.userId;  // 将 userId 映射为 id
+          delete user.userId;  // 删除原始的 userId 字段
         }
+        currentUser.value = user; // 如果获取到的用户数据有效，再进行赋值
+        const currentUserKey = `${currentUser.value.username}`;
+        adminUsers.value = await getUsersByRole('ADMIN', currentUserKey);
+        normalUsers.value = await getUsersByRole('USER', currentUserKey);
+        // 获取每个用户的最后一条消息
+        await fetchAndSetLastMessages([...adminUsers.value, ...normalUsers.value], currentUser.value);
+        loadUnReadNum(currentUser.value.id);
       } catch (error) {
         console.error('获取用户列表失败:', error);
       }
     };
 
-
+    // 获取并设置每个用户的最后一条消息
+    const fetchAndSetLastMessages = async (users: User[], currentUser: User) => {
+      for (let user of users) {
+        try {
+          const lastMessage = await fetchLastMessage(currentUser.id, user.id);
+          if (lastMessage) {
+            user.lastMessage = lastMessage;
+          }
+        } catch (error) {
+          console.error(`获取用户 ${user.id} 的最后一条消息失败:`, error);
+        }
+      }
+    };
 
     // 建立 WebSocket 连接
     const connectSocket = () => {
-
       const socketUrl = `${import.meta.env.VITE_SOCKET_URL}/chat/${currentUser.value?.username}`;
       console.log('socketUrl:', socketUrl);
       socket.value = new WebSocket(socketUrl);
@@ -221,26 +258,27 @@ export default defineComponent({
           const message: Message = JSON.parse(msg.data);
           if (!message.content) return;
 
-          if (message.fromUserId === currentUser.value.id && message.toUserId === chatUser.value.id) {//自己发送
+          if (message.fromUserId === currentUser.value.id && message.toUserId === chatUser.value.id) { // 自己发送
             messages.value.push(message);
             nextTick(() => {
-              scrollToBottom(); //  新消息滚动到最底部
-            })
-          } else if (message.fromUserId === chatUser.value.id && message.toUserId === currentUser.value.id) {//对方发送
+              scrollToBottom(); // 新消息滚动到最底部
+            });
+          } else if (message.fromUserId === chatUser.value.id && message.toUserId === currentUser.value.id) { // 对方发送
             messages.value.push(message);
             newMessage.value = true;
           }
-          //加载消息数字
+
+          // 更新未读消息数
           if (chatUser.value.id === message.fromUserId) {
-            //是当前聊天，重置未读消息数
+            // 是当前聊天，重置未读消息数
             setUnReadNum(currentUser.value.id, chatUser.value.id);
           } else {
-            //非当前聊天，更新未读消息数
+            // 非当前聊天，更新未读消息数
             loadUnReadNum(currentUser.value.id);
           }
-
+          // 更新特定用户的最后一条消息
+          updateLastMessage(message);
         }
-
       };
 
       socket.value.onclose = () => {
@@ -251,6 +289,24 @@ export default defineComponent({
         console.error('WebSocket连接错误:', error);
       };
     };
+    // 更新特定用户的最后一条消息
+    const updateLastMessage = (message: Message) => {
+      // 获取所有的用户，包括管理员和普通用户
+      const users = [...adminUsers.value, ...normalUsers.value];
+
+      // 更新发送者的最后一条消息
+      const sender = users.find(u => u.id === message.fromUserId);
+      if (sender) {
+        sender.lastMessage = message;
+      }
+
+      // 更新接收者的最后一条消息
+      const receiver = users.find(u => u.id === message.toUserId);
+      if (receiver) {
+        receiver.lastMessage = message;
+      }
+    };
+
 
     // 表情点击事件
     const clickEmoji = (emoji: string) => {
@@ -262,19 +318,17 @@ export default defineComponent({
 
     // 文件上传
     const customUpload = async (options: any) => {
-      const { file, onSuccess, onError } = options; // el-upload 提供的选项
+      const { file, onSuccess, onError } = options;
       try {
         const url = await uploadImage(file); // 上传图片并获取 URL
-        onSuccess(url); // 通知 el-upload 上传成功，返回 URL
+        onSuccess(url);
         handleFile(url);
         ElMessage.success('文件上传成功');
       } catch (error) {
-        onError(error); // 上传失败时调用 onError
+        onError(error);
         ElMessage.error('文件上传失败');
       }
     };
-
-
 
     // 文件上传成功的回调
     const handleFile = (url: string) => {
@@ -282,28 +336,19 @@ export default defineComponent({
         ElMessage.error('WebSocket not connected');
         return;
       }
-
       const message = getMessage('img'); // 获取图片消息模板
       if (!message) return;
-
       message.content = url; // 使用上传后的 URL 作为消息内容
-      console.log('message:', message);
-      console.log('url:', url);
-
       const extName = url.split('.').pop();
       const validImageExtensions = ['png', 'jpg', 'jpeg', 'gif', 'bmp', 'tiff', 'svg', 'webp'];
-
       if (validImageExtensions.includes(extName || '')) {
         message.type = 'img'; // 标记为图片类型
       } else {
         message.type = 'file'; // 如果是其他类型，标记为文件类型
       }
-
       // 发送消息
       socket.value.send(JSON.stringify(message));
     };
-
-
 
     //发送消息
     const send = () => {
@@ -315,6 +360,7 @@ export default defineComponent({
       // 发送消息
       if (socket.value) {
         const message = getMessage('text');
+        if (!message) return;
         socket.value.send(JSON.stringify(message));  // 通过 WebSocket 发送消息
       }
     };
@@ -324,6 +370,7 @@ export default defineComponent({
 
     //获取消息内容
     const getMessage = (type: string) => {
+      console.log('获取消息内容', messages.value);
       // 确保消息内容不为空
       const contentEditable = document.getElementById('im-content') as HTMLElement;
       let messageContent = contentEditable ? contentEditable.innerHTML : '';
@@ -331,7 +378,7 @@ export default defineComponent({
       // 清除所有HTML标签，保留纯文本
       contentEditable.innerHTML = '';  // 清空文本框内容
       if (!messageContent && type === 'text') {
-        console.log('请输入内容');
+        ElMessage.error('消息内容不能为空');
         return;
       }
       // 获取当前时间
@@ -339,17 +386,17 @@ export default defineComponent({
 
       // 创建消息对象
       const message: Message = {
-        id: Date.now(),  // 使用时间戳作为唯一的消息 ID
-        content: messageContent,  // 消息内容
-        fromUserId: currentUser.value.id,  // 发送者用户名
+        id: Date.now(),
+        content: messageContent,
+        fromUserId: currentUser.value.id,
         fromUserName: currentUser.value.username,
-        fromAvatar: currentUser.value.avatar,  // 发送者头像
-        time: currentTime,  // 消息时间
-        type: type,  // 消息类型
-        toUserId: chatUser.value.id,  // 接收者用户名
+        fromAvatar: currentUser.value.avatar,
+        time: currentTime,
+        type: type,
+        toUserId: chatUser.value.id,
         toUserName: chatUser.value.username,
-        toAvatar: chatUser.value.avatar,  // 接收者头像
-        isRead: 0  // 初始为未读
+        toAvatar: chatUser.value.avatar,
+        isRead: 0
       };
 
       contentEditable.innerHTML = '';
@@ -367,10 +414,14 @@ export default defineComponent({
       }
     };
 
+    const isLoading = ref(false); // 标记是否正在加载，防抖
+    const selectedUserId = ref<number | null>(null);
     // 选择聊天对象
     const selectToUser = async (user: User) => {
+      if (isLoading.value) return;
       try {
-        // 调用获取用户信息的方法
+        isLoading.value = true;
+        selectedUserId.value = user.id;
         const targetUser = await getUserInfo(user.id);  // 假设 item 中包含 userId
         // 设置当前聊天对象
         chatUser.value = targetUser;
@@ -382,8 +433,10 @@ export default defineComponent({
         scrollToBottom(); // 新消息滚动到最底部
       } catch (error) {
         console.error('获取用户信息失败:', error);
-      }
-    };
+      } finally {
+        isLoading.value = false; // 操作完成后，设置为加载完成状态}
+      };
+    }
 
     // 下载文件
     const download = (file: string) => {
@@ -391,25 +444,11 @@ export default defineComponent({
     };
 
 
-    // // 加载历史消息
-    // const loadMessages = async (currentUserId: number, chatUserId: number) => {
-    //   try {
-    //     const result = await fetchMessages(currentUserId, chatUserId);
-    //     messages.value = result;
-    //     // 更新特定用户的未读消息数
-    //     unreadCounts.value = await getUnReadNum(currentUserId);  // 更新当前聊天用户的未读消息数
-    //     console.log('加载未读消息:', unreadCounts.value);
-    //   } catch (error) {
-    //     console.error('加载消息失败:', error);
-    //   }
-    // };
-
-
     // 滚动事件处理
     const onScroll = (event: Event) => {
       const container = event.target as HTMLElement;
       // 滚动到了顶部，触发加载更多消息
-      if (container.scrollTop <= 150) {
+      if (container.scrollTop <= 500) {
         loadMoreMessages();
       }
       // 如果滚动到底部，隐藏新消息提示
@@ -470,10 +509,10 @@ export default defineComponent({
       const previousMessage = messages.value[index - 1];
       const currentMessageTime = new Date(item.time).getTime();
       const previousMessageTime = new Date(previousMessage.time).getTime();
-      return Math.abs(currentMessageTime - previousMessageTime) > 60000*3; // 时间差大于3分钟，显示时间
+      return Math.abs(currentMessageTime - previousMessageTime) > 60000 * 3; // 时间差大于3分钟，显示时间
     };
 
-    //点击清楚新消息
+    //点击清除新消息
     const clearNewMessage = () => {
       newMessage.value = false;
       scrollToBottom();
@@ -503,6 +542,7 @@ export default defineComponent({
       emojis,
       unreadCounts,
       newMessage,
+      selectedUserId,
       send,
       scrollToBottom,
       selectToUser,
@@ -515,6 +555,7 @@ export default defineComponent({
       formatTime: format.formatTime,
       onScroll,
       clearNewMessage,
+
     };
   }
 });
@@ -524,7 +565,7 @@ export default defineComponent({
 .chat-container {
   display: flex;
   padding: 20px;
-  margin: auto;
+  margin: 35px auto;
   max-width: 1200px;
 }
 
@@ -550,6 +591,7 @@ export default defineComponent({
 .user-list {
   padding: 10px 0;
   height: 660px;
+  width: 250px;
   overflow-y: auto;
 }
 
@@ -560,27 +602,76 @@ export default defineComponent({
   color: #555;
 }
 
+/* 横线分隔 */
+.divider {
+  height: 1px;
+  background-color: #e0e0e0;
+  margin: 10px 0;
+}
+
 .user-item {
+  cursor: pointer;
+  padding: 8px;
   display: flex;
   align-items: center;
-  margin-bottom: 12px;
-  padding: 8px;
-  border-radius: 5px;
-  cursor: pointer;
-  transition: background-color 0.3s ease;
+  justify-content: space-between;
+  transition: background-color 0.1s ease, border-left 0.1s ease;
+}
+
+.user-item.active {
+  background-color: #f0f8ff;
+  border-left: 5px solid #007bff;
+  box-shadow: 0 0 10px rgba(0, 123, 255, 0.2);
 }
 
 .user-item:hover {
   background-color: #f0f0f0;
 }
 
-.user-item img {
-  width: 30px;
-  height: 30px;
+
+.user-avatar {
+  width: 40px;
+  height: 40px;
   border-radius: 50%;
-  margin-right: 10px;
 }
 
+.user-info {
+  flex: 1;
+  margin-left: 10px;
+}
+
+.username {
+  font-size: 14px;
+  font-weight: bold;
+  color: #333;
+  text-overflow: ellipsis;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.last-message {
+  font-size: 12px;
+  color: #888;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.last-message-text {
+  display: inline-block;
+  max-width: 150px;
+  text-overflow: ellipsis;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.user-time {
+  position: absolute;
+  right: 10px;
+  top: 5px;
+  font-size: 12px;
+  color: #bbb;
+}
 
 .chat-status {
   font-size: 12px;
@@ -590,13 +681,39 @@ export default defineComponent({
 
 
 .unread-bubble {
+  position: absolute;
+  bottom: 10px;
+  right: 10px;
   background-color: #ff4d4f;
   color: #fff;
-  font-size: 12px;
+  font-size: 10px;
   padding: 2px 6px;
   border-radius: 12px;
-  margin-left: auto;
 }
+
+
+
+.last-message-preview {
+  display: flex;
+  font-size: 12px;
+  color: #888;
+  margin-top: 5px;
+}
+
+.last-message-content {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.last-message-time {
+  margin-left: 10px;
+  color: #bbb;
+}
+
+
+
 
 .user-item {
   position: relative;
@@ -611,19 +728,18 @@ export default defineComponent({
   flex: 1;
   position: relative;
   background-color: white;
-
   overflow: hidden;
 }
 
 .chat-header {
   text-align: center;
   line-height: 50px;
+  border-bottom: 1px solid #ccc;
 }
 
 .message-container {
   height: 600px;
   overflow-y: scroll;
-  border-top: 1px solid #ccc;
   padding: 15px;
 }
 
@@ -745,24 +861,18 @@ export default defineComponent({
 .new-message-alert {
   position: absolute;
   bottom: 80px;
-  /* 距离底部20px */
   right: 20px;
   background: linear-gradient(135deg, #ff7a00, #ff1c00);
-  /* 渐变背景色 */
   color: white;
   padding: 6px 12px;
   border-radius: 20px;
-  /* 圆角效果 */
   font-size: 12px;
   font-weight: bold;
   text-align: center;
   cursor: pointer;
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-  /* 阴影效果 */
   transition: all 0.3s ease;
-  /* 添加平滑的过渡效果 */
   z-index: 10;
-  /* 确保它浮在其他内容上面 */
 }
 
 .new-message-alert:hover {
@@ -777,8 +887,6 @@ export default defineComponent({
   margin-bottom: 10px;
   min-height: 40px;
 }
-
-
 
 .download {
   cursor: pointer;
@@ -855,5 +963,29 @@ export default defineComponent({
 
 .send-button {
   margin-left: 15px;
+}
+
+
+/* 自定义滚动条样式 */
+::-webkit-scrollbar {
+  width: 4px;
+}
+
+/* 滚动条的滑块样式 */
+::-webkit-scrollbar-thumb {
+  background-color: rgba(0, 0, 0, 0.0);
+  /* 初始时透明的滑块 */
+  border-radius: 10px;
+}
+
+/* 滚动条轨道样式 */
+::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.0);
+  /* 透明的轨道 */
+}
+
+/* 鼠标悬停在整个 .scroll-container 上时才显示滚动条 */
+.scroll-container:hover::-webkit-scrollbar-thumb {
+  background-color: rgba(0, 0, 0, 0.25);
 }
 </style>

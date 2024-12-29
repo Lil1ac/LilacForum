@@ -57,4 +57,16 @@ public class ImSingleController {
         imSingleServiceImpl.add(imSingle);
         return Result.success();
     }
+
+
+    //获取最近一条消息
+    @GetMapping("/lastMessage")
+    public Result getLastMessage(@RequestParam Integer fromUserId, @RequestParam Integer toUserId) {
+        log.info("getLastMessage fromUserId: {}, toUserId: {}", fromUserId, toUserId);
+        ImSingle imSingle = imSingleServiceImpl.getLastMessage(fromUserId, toUserId);
+        if (imSingle == null) {
+            return Result.error("No message found");
+        }
+        return Result.success(imSingle);
+    }
 }

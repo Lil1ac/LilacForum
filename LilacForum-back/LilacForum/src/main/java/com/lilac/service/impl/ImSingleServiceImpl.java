@@ -78,4 +78,17 @@ public class ImSingleServiceImpl implements ImService {
 
         return unReadCounts;  // 返回包含所有未读消息数的 Map
     }
+
+
+
+    /**
+     * 获取两个用户之间的最后一条消息
+     *
+     * @param fromUserId 发送方用户ID，用于标识消息的发送者
+     * @param toUserId 接收方用户ID，用于标识消息的接收者
+     * @return ImSingle 返回两个用户之间的最后一条消息对象，如果不存在则返回null
+     */
+    public ImSingle getLastMessage(Integer fromUserId, Integer toUserId) {
+        return imSingleMapper.getLastMessage(fromUserId, toUserId);
+    }
 }

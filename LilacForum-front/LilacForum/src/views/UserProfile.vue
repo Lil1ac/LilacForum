@@ -86,6 +86,7 @@ import format from '@/utils/format';
 const route = useRoute();
 const router = useRouter();
 const userId = Number(route.params.userId);
+const defaultAvatar = 'https://cube.elemecdn.com/3/7c/3ea6beec64369c2642b92c6726f1epng.png';
 
 const userInfo = ref<User>({
     id: 0,
@@ -97,10 +98,9 @@ const userInfo = ref<User>({
     profession: '',
     hobby: '',
     bio: '',
-    avatar: 'https://via.placeholder.com/150',
+    avatar: defaultAvatar,
     role: '',
 });
-
 
 
 // 获取用户信息
@@ -119,7 +119,6 @@ const page = ref(1);
 const pageSize = 10;
 const loadingMore = ref(false);
 const hasMorePosts = ref(true);
-const defaultAvatar = '/path/to/default-avatar.png';
 // 加载用户帖子
 const loadPosts = async () => {
     if (!hasMorePosts.value || loadingMore.value) return;

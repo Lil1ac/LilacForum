@@ -28,6 +28,7 @@
            OR (from_user_id = #{toUserId} AND to_user_id = #{fromUserId}))
         ORDER BY time ASC
     </select>
+
     <!-- 查询从游标之后的消息，按 message_id 升序排列 -->
     <select id="findMessagesByCursorAndLimit" resultType="com.lilac.pojo.ImSingle">
         SELECT *
@@ -56,6 +57,16 @@
            OR (from_user_id = #{toUserId} AND to_user_id = #{fromUserId}))
             AND is_read = 0
         ORDER BY id asc
+        LIMIT 1
+    </select>
+
+    <!-- 查询对话最近一条消息 -->
+    <select id="getLastMessage" resultType="com.lilac.pojo.ImSingle">
+        SELECT *
+        FROM imSingle
+        WHERE ((from_user_id = #{fromUserId} AND to_user_id = #{toUserId})
+        OR (from_user_id = #{toUserId} AND to_user_id = #{fromUserId}))
+        ORDER BY id desc
         LIMIT 1
     </select>
 
