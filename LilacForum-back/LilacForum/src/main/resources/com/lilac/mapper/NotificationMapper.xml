@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.lilac.mapper.NotificationMapper">
+
+    <!-- 插入一条新的通知 -->
+    <insert id="insertNotification" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO notification (user_id, type, content, is_read, created_at)
+        VALUES (#{userId}, #{type}, #{content}, 0, NOW());
+    </insert>
+
+    <!-- 获取指定用户的所有通知 -->
+    <select id="getNotifications" resultType="com.lilac.pojo.Notification">
+        SELECT * FROM notification
+        WHERE user_id = #{userId}
+        ORDER BY created_at DESC;
+    </select>
+
+    <!-- 更新通知的状态 -->
+    <update id="updateNotificationStatus">
+        UPDATE notification
+        SET is_read = #{isRead}
+        WHERE id = #{notificationId};
+    </update>
+
+    <!-- 删除指定通知 -->
+    <delete id="deleteNotification">
+        DELETE FROM notification WHERE id = #{notificationId};
+    </delete>
+
+</mapper>

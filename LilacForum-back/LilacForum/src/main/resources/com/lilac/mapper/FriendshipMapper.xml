@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.lilac.mapper.FriendshipMapper">
+    <!-- 插入好友请求 -->
+    <insert id="insertFriendRequest" parameterType="com.lilac.pojo.Friendship">
+        INSERT INTO friendship (user_id, friend_id, status, created_at, updated_at)
+        VALUES (#{userId}, #{friendId}, #{status}, NOW(), NOW());
+    </insert>
+
+    <!-- 更新好友请求状态 -->
+    <update id="updateFriendshipStatus">
+        UPDATE friendship
+        SET status     = #{status},
+            updated_at = NOW()
+        WHERE user_id = #{userId}
+          AND friend_id = #{friendId};
+    </update>
+
+    <!-- 删除好友关系 -->
+    <delete id="deleteFriendship">
+        DELETE
+        FROM friendship
+        WHERE (user_id = #{userId} AND friend_id = #{friendId})
+           OR (user_id = #{friendId} AND friend_id = #{userId});
+    </delete>
+
+    <!-- 获取用户的所有好友 -->
+    <select id="getFriends" resultType="com.lilac.pojo.User">
+        SELECT u.*
+        FROM user u
+                 JOIN friendship f ON (u.id = f.friend_id)
+        WHERE f.user_id = #{userId}
+          AND f.status = 'accepted';
+    </select>
+
+    <!-- 获取用户的所有好友请求 -->
+    <select id="getFriendRequests" resultType="com.lilac.pojo.Friendship">
+        SELECT *
+        FROM friendship
+        WHERE friend_id = #{userId}
+          AND status = 'pending';
+    </select>
+
+    <!-- 获取两人之间的好友关系 -->
+    <select id="getFriendship" resultType="com.lilac.pojo.Friendship">
+        SELECT *
+        FROM friendship
+        WHERE (user_id = #{userId} AND friend_id = #{friendId})
+           OR (user_id = #{friendId} AND friend_id = #{userId});
+    </select>
+
+</mapper>
+

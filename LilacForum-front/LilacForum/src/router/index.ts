@@ -12,6 +12,7 @@ import Register from '@/views/Register.vue';
 import SectionDetail from '@/views/SectionDetail.vue'; // 具体板块页面
 import PostDetail from '@/views/PostDetail.vue'; // 帖子详情页面
 import SearchResults from '@/views/SearchResults.vue'; // 搜索结果页面
+import MyFriend from '@/views/MyFriend.vue';
 
 
 const routes = [
@@ -86,6 +87,11 @@ const routes = [
         path: 'chat',
         component: Chat,
         name: 'Chat'
+      },
+      {
+        path: '/myFriend',
+        component: MyFriend,
+        name: 'MyFriend'
       }
     ]
   },

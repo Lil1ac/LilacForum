@@ -49,4 +49,12 @@ public class UserController {
 
         return Result.success(filteredUsers);
     }
+
+    //根据用户名查找用户
+    @GetMapping("/username")
+    public Result getUserByUsername(@RequestParam String username) {
+        log.info("Getting user with username: {}", username);
+        User user = userService.getUserByUsername(username);
+        return Result.success(user);
+    }
 }

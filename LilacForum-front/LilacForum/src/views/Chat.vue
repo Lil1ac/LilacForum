@@ -570,9 +570,9 @@ export default defineComponent({
 }
 
 .card-container {
-  background-color: #ffffff;
   overflow: auto;
   height: 100%;
+  border-radius: 0
 }
 
 
@@ -581,6 +581,7 @@ export default defineComponent({
   border-bottom: 1px solid #ccc;
   font-size: 16px;
   font-weight: bold;
+  border-radius: 0;
 }
 
 .sub-text {

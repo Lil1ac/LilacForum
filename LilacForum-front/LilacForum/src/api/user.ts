@@ -56,3 +56,21 @@ export const getUsersByRole = async (role: string, fromUser: string): Promise<Us
     }
 };
 
+//根据用户名查找用户
+export const getUserByUsername = async (username: string): Promise<User> => {
+    try {
+        const response = await request.get('/user/info/username', {
+            params: { username }
+        });
+        const result = response.data;
+        if (result.code === 1) {
+            return result.data;
+        } else {
+            throw new Error(result.msg);
+        }
+    } catch (error) {
+        ElMessage.error('获取用户信息失败，请重试');
+        throw error;
+    }
+};
+

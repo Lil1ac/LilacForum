@@ -38,6 +38,7 @@
             <template #dropdown>
               <el-dropdown-menu>
                 <el-dropdown-item command="profile" :icon="EditPen">修改信息</el-dropdown-item>
+                <el-dropdown-item command="myFriend" :icon="User">我的好友</el-dropdown-item>
                 <el-dropdown-item command="logout" :icon="SwitchButton">登出</el-dropdown-item>
               </el-dropdown-menu>
             </template>
@@ -65,7 +66,7 @@ import { ref, computed, onMounted } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
 import { useUserStore } from '@/stores/userStore';
 import { getUserInfo } from '@/api/user';
-import { ArrowDown, EditPen, SwitchButton } from '@element-plus/icons-vue';
+import { ArrowDown, EditPen, SwitchButton, User } from '@element-plus/icons-vue';
 import { ElMessage } from 'element-plus';
 
 // 使用 Pinia store
@@ -90,7 +91,7 @@ const handleMenuSelect = (index: string) => {
     HomePage: 'HomePage',
     Sections: 'Sections',
     Announcements: 'Announcements',
-    Chat:'Chat'
+    Chat: 'Chat'
   };
   router.push({ name: routeMap[index] });
 };
@@ -130,6 +131,8 @@ const handleCommand = (command: string) => {
     router.push({ name: 'Login' });
   } else if (command === 'profile') {
     router.push({ name: 'Profile' });
+  } else if (command === 'myFriend') {
+    router.push({ name: 'MyFriend' });
   }
 };
 

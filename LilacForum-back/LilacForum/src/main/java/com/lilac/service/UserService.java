@@ -11,4 +11,6 @@ public interface UserService {
     void deleteUser(Integer id);
 
     List<User> getAllUsers();
+
+    User getUserByUsername(String username);
 }
