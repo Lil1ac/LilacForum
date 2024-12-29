@@ -1,6 +1,5 @@
 package com.lilac.controller;
 
-import com.github.pagehelper.PageInfo;
 import com.lilac.dto.ImSingleRequest;
 import com.lilac.pojo.ImSingle;
 import com.lilac.pojo.Result;

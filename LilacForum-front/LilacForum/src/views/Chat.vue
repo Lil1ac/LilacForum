@@ -82,7 +82,13 @@
 
           </div>
         </div>
+        <!-- 当前对话新消息提示 -->
+        <div v-if="newMessage" class="new-message-alert" @click="clearNewMessage">
+          有新消息
+        </div>
       </div>
+
+
 
       <div class="chat-footer">
         <!-- 表情面板 -->
@@ -129,6 +135,7 @@ import { ElMessage } from 'element-plus';
 import { getUserInfo } from '@/api/user';
 import { emojis } from '@/assets/emoji';
 import format from '@/utils/format';
+import { nextTick } from 'vue';
 
 const defaultAvatar = 'https://cube.elemecdn.com/3/7c/3ea6beec64369c2642b92c6726f1epng.png';
 
@@ -172,7 +179,7 @@ export default defineComponent({
     const toAvatar = ref(''); // 选择的用户头像
     const unRead = ref<number>(0); // 未读消息数量
     const unreadCounts = ref<{ [key: number]: number }>({});  // 用一个对象来存储每个用户的未读消息数，key 是用户ID，value 是未读消息数
-
+    const newMessage = ref<boolean>(false); // 是否当前对话有新消息
 
 
 
@@ -201,7 +208,8 @@ export default defineComponent({
     // 建立 WebSocket 连接
     const connectSocket = () => {
 
-      const socketUrl = `ws://localhost:8080/chat/` + currentUser.value?.username; // WebSocket 服务端 URL
+      const socketUrl = `${import.meta.env.VITE_SOCKET_URL}/chat/${currentUser.value?.username}`;
+      console.log('socketUrl:', socketUrl);
       socket.value = new WebSocket(socketUrl);
 
       socket.value.onopen = () => {
@@ -211,11 +219,16 @@ export default defineComponent({
       socket.value.onmessage = (msg) => {
         if (msg.data) {
           const message: Message = JSON.parse(msg.data);
-          // 判断是否是当前用户的消息，如果是，则添加到消息列表中
-          if (message.content && (message.fromUserId === currentUser.value.id && message.toUserId === chatUser.value.id)
-            || (message.fromUserId === chatUser.value.id && message.toUserId === currentUser.value.id)) {
+          if (!message.content) return;
+
+          if (message.fromUserId === currentUser.value.id && message.toUserId === chatUser.value.id) {//自己发送
             messages.value.push(message);
-            scrollToBottom(); //  新消息滚动到最底部
+            nextTick(() => {
+              scrollToBottom(); //  新消息滚动到最底部
+            })
+          } else if (message.fromUserId === chatUser.value.id && message.toUserId === currentUser.value.id) {//对方发送
+            messages.value.push(message);
+            newMessage.value = true;
           }
           //加载消息数字
           if (chatUser.value.id === message.fromUserId) {
@@ -365,7 +378,7 @@ export default defineComponent({
         chatUser.value.username = user.username;  // 选择用户时拼接用户名和角色
         toAvatar.value = targetUser.avatar;  // 获取用户头像
         // 如果需要加载其他内容，可以调用 load 方法
-        loadInitialMessages();
+        await loadInitialMessages();
         scrollToBottom(); // 新消息滚动到最底部
       } catch (error) {
         console.error('获取用户信息失败:', error);
@@ -391,13 +404,18 @@ export default defineComponent({
     //   }
     // };
 
-    
+
     // 滚动事件处理
     const onScroll = (event: Event) => {
       const container = event.target as HTMLElement;
-      if (container.scrollTop <= 0) {
-        // 滚动到了顶部，触发加载更多消息
+      // 滚动到了顶部，触发加载更多消息
+      if (container.scrollTop <= 150) {
         loadMoreMessages();
+      }
+      // 如果滚动到底部，隐藏新消息提示
+      const isAtBottom = container.scrollHeight - container.scrollTop === container.clientHeight;
+      if (isAtBottom) {
+        newMessage.value = false;
       }
     };
 
@@ -452,7 +470,13 @@ export default defineComponent({
       const previousMessage = messages.value[index - 1];
       const currentMessageTime = new Date(item.time).getTime();
       const previousMessageTime = new Date(previousMessage.time).getTime();
-      return Math.abs(currentMessageTime - previousMessageTime) > 60000; // 时间差大于1分钟，显示时间
+      return Math.abs(currentMessageTime - previousMessageTime) > 60000*3; // 时间差大于3分钟，显示时间
+    };
+
+    //点击清楚新消息
+    const clearNewMessage = () => {
+      newMessage.value = false;
+      scrollToBottom();
     };
 
     onMounted(() => {
@@ -478,6 +502,7 @@ export default defineComponent({
       unRead,
       emojis,
       unreadCounts,
+      newMessage,
       send,
       scrollToBottom,
       selectToUser,
@@ -489,6 +514,7 @@ export default defineComponent({
       shouldShowTime,
       formatTime: format.formatTime,
       onScroll,
+      clearNewMessage,
     };
   }
 });
@@ -504,7 +530,6 @@ export default defineComponent({
 
 .card-container {
   background-color: #ffffff;
-  border-radius: 10px;
   overflow: auto;
   height: 100%;
 }
@@ -583,12 +608,10 @@ export default defineComponent({
 
 
 .chat-box {
-  width: 800px;
-  height: 100%;
-  margin: 0 auto;
+  flex: 1;
+  position: relative;
   background-color: white;
-  border-radius: 5px;
-  box-shadow: 0 0 10px #ccc;
+
   overflow: hidden;
 }
 
@@ -624,7 +647,6 @@ export default defineComponent({
 
 .message.right {
   display: flex;
-  align-items: center;
   justify-content: flex-end;
 }
 
@@ -636,6 +658,7 @@ export default defineComponent({
   max-width: 75%;
   position: relative;
   border: 1px solid #0056b3;
+
 }
 
 .message.right .avatar {
@@ -647,7 +670,6 @@ export default defineComponent({
 
 .message.left {
   display: flex;
-  align-items: center;
 }
 
 .message.left .message-content {
@@ -698,11 +720,10 @@ export default defineComponent({
 
 
 .message-image {
-  margin: 5px 10px;
-  padding: 5px;
+  margin: 5px;
   border-radius: 5px;
   display: inline-block;
-  max-width: 400px;
+  max-width: 500px;
 }
 
 
@@ -721,7 +742,32 @@ export default defineComponent({
 }
 
 
+.new-message-alert {
+  position: absolute;
+  bottom: 80px;
+  /* 距离底部20px */
+  right: 20px;
+  background: linear-gradient(135deg, #ff7a00, #ff1c00);
+  /* 渐变背景色 */
+  color: white;
+  padding: 6px 12px;
+  border-radius: 20px;
+  /* 圆角效果 */
+  font-size: 12px;
+  font-weight: bold;
+  text-align: center;
+  cursor: pointer;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+  /* 阴影效果 */
+  transition: all 0.3s ease;
+  /* 添加平滑的过渡效果 */
+  z-index: 10;
+  /* 确保它浮在其他内容上面 */
+}
 
+.new-message-alert:hover {
+  background: linear-gradient(135deg, #ff4e00, #ff0000);
+}
 
 
 .content-editable {

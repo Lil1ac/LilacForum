@@ -29,8 +29,6 @@ public class ImSingleServiceImpl implements ImService {
     }
 
     // 根据用户ID查找单聊消息记录
-
-
     public List<ImSingleRequest> findMessagesByCursor(Integer fromUserId, Integer toUserId, Long cursor, Integer pageSize) {
         // 查询消息，假设使用 messageId 作为游标
         List<ImSingle> list;
@@ -41,7 +39,6 @@ public class ImSingleServiceImpl implements ImService {
             // 查询从游标之后的数据
             list = imSingleMapper.findMessagesByCursorAndLimit(fromUserId, toUserId, cursor, pageSize);
         }
-
 
         // 获取最后一个未读消息的ID，用于批量更新已读
         Integer lastUnreadMessageId = imSingleMapper.findLastUnReadMessageId(fromUserId, toUserId);
