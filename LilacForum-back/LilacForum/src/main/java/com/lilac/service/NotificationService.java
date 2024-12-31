@@ -1,6 +1,7 @@
 package com.lilac.service;
 
 import com.lilac.pojo.Notification;
+import com.lilac.pojo.PageBean;
 
 import java.util.List;
 
@@ -17,7 +18,8 @@ public interface NotificationService {
      * @param userId 用户ID
      * @return 通知列表
      */
-    List<Notification> getNotifications(Integer userId);
+    PageBean<Notification> getNotifications(
+            Integer userId, Integer page, Integer pageSize, String sortBy);
 
     /**
      * 标记通知为已读
@@ -30,4 +32,6 @@ public interface NotificationService {
      * @param notificationId 通知ID
      */
     void deleteNotification(Integer notificationId);
+
+    Integer getNotificationCount(Integer userId);
 }

@@ -12,7 +12,12 @@ export const fetchMessages = async (
 ): Promise<Message[]> => {
   try {
     const response = await request.get(`/imSingle`, {
-      params: { fromUserId, toUserId, cursor, pageSize }
+      params: { 
+        fromUserId, 
+        toUserId, 
+        cursor, 
+        pageSize 
+      }
     });
 
     const result = response.data;

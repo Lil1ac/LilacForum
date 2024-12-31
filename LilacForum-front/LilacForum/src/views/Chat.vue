@@ -13,6 +13,7 @@
             :class="{ 'active': selectedUserId === user.id }">
             <div class="user-left">
               <img :src="user.avatar || defaultAvatar" alt="头像" class="user-avatar" />
+              <el-badge v-if="user.isOnline" class="online-badge" :dot="true"></el-badge>
             </div>
             <div class="user-info">
               <div class="username">{{ user.username }}</div>
@@ -34,13 +35,46 @@
         <!-- 分隔线 -->
         <div class="divider"></div>
 
-        <!-- 普通用户列表 -->
+        <!-- 好友列表 -->
+        <div class="myfriend-user-list">
+          <div class="list-title">我的好友</div>
+          <div v-for="user in myFriends" :key="user.username" class="user-item" @click="selectToUser(user)"
+            :class="{ 'active': selectedUserId === user.id }">
+            <div class="user-left">
+              <el-badge v-if="user.isOnline" class="online-badge" :dot="true">
+              </el-badge>
+              <img :src="user.avatar || defaultAvatar" alt="头像" class="user-avatar" />
+            </div>
+            <div class="user-info">
+              <div class="username">{{ user.username }}</div>
+              <div class="last-message" v-if="user.lastMessage">
+                <span class="last-message-text">
+                  {{ user.lastMessage.content }}
+                </span>
+              </div>
+            </div>
+            <div v-if="user.lastMessage" class="user-time">
+              <span>{{ formatTime(user.lastMessage.time) }}</span>
+            </div>
+            <div class="unread-bubble" v-if="unreadCounts[user.id] > 0">
+              {{ unreadCounts[user.id] }}
+            </div>
+          </div>
+        </div>
+
+        <!-- 分隔线 -->
+        <div class="divider"></div>
+
+        <!-- 普通在线用户列表 -->
         <div class="normal-user-list">
           <div class="list-title">普通用户</div>
           <div v-for="user in normalUsers" :key="user.username" class="user-item" @click="selectToUser(user)"
             :class="{ 'active': selectedUserId === user.id }">
             <div class="user-left">
-              <img :src="user.avatar || defaultAvatar" alt="头像" class="user-avatar" />
+              <el-badge v-if="user.isOnline" class="online-badge" :dot="true">
+                <img :src="user.avatar || defaultAvatar" alt="头像" class="user-avatar" />
+              </el-badge>
+              <img v-else :src="user.avatar || defaultAvatar" alt="头像" class="user-avatar" />
             </div>
             <div class="user-info">
               <div class="username">{{ user.username }}</div>
@@ -155,6 +189,7 @@ import { defineComponent, ref, onMounted, onBeforeUnmount } from 'vue';
 import { getUsersByRole } from '@/api/user'; // 引入 API
 import type { User } from '@/interface/User';
 import type { Message } from '@/interface/Message';
+import type { WSMessage } from '@/interface/WSMessage';
 import { fetchMessages, sendMessage, getUnReadNum, fetchLastMessage } from '@/api/message';
 import { uploadImage } from '@/api/upload';
 import { ElMessage } from 'element-plus';
@@ -162,6 +197,8 @@ import { getUserInfo } from '@/api/user';
 import { emojis } from '@/assets/emoji';
 import format from '@/utils/format';
 import { nextTick } from 'vue';
+import { getFriends } from '@/api/friendship';
+const finalUsers = ref<User[]>([]); // 最终去重后的用户列表
 
 const defaultAvatar = 'https://cube.elemecdn.com/3/7c/3ea6beec64369c2642b92c6726f1epng.png';
 
@@ -197,7 +234,9 @@ export default defineComponent({
       role: 'guest',
     });
     const adminUsers = ref<User[]>([]);
+    const myFriends = ref<User[]>([]);
     const normalUsers = ref<User[]>([]);
+    const onlineUsers = ref<User[]>([]);
 
     const text = ref<string>('');
     const messages = ref<Message[]>([]);
@@ -219,10 +258,30 @@ export default defineComponent({
         }
         currentUser.value = user; // 如果获取到的用户数据有效，再进行赋值
         const currentUserKey = `${currentUser.value.username}`;
+
+        // 获取管理员列表
         adminUsers.value = await getUsersByRole('ADMIN', currentUserKey);
+        // 获取好友列表
+        myFriends.value = await getFriends(currentUser.value.id);
+        // 将好友列表减去管理员列表，避免重复
+        const uniqueFriends = myFriends.value.filter(friend =>
+          !adminUsers.value.some(admin => admin.id === friend.id)
+        );
+        myFriends.value = uniqueFriends;
+        // 获取普通用户列表
         normalUsers.value = await getUsersByRole('USER', currentUserKey);
-        // 获取每个用户的最后一条消息
-        await fetchAndSetLastMessages([...adminUsers.value, ...normalUsers.value], currentUser.value);
+        // 将普通用户列表减去好友列表，避免重复
+        const uniqueNormalUsers = normalUsers.value.filter(user =>
+          !myFriends.value.some(friend => friend.id === user.id)
+        );
+
+        // 合并三类用户：管理员、好友（排除重复）、普通用户（排除重复）
+        finalUsers.value = [...adminUsers.value, ...uniqueFriends, ...uniqueNormalUsers];
+        normalUsers.value = uniqueNormalUsers;
+        // 更新每个用户的最后一条消息
+        await fetchAndSetLastMessagesAndStatus(finalUsers.value, currentUser.value);
+
+
         loadUnReadNum(currentUser.value.id);
       } catch (error) {
         console.error('获取用户列表失败:', error);
@@ -230,7 +289,7 @@ export default defineComponent({
     };
 
     // 获取并设置每个用户的最后一条消息
-    const fetchAndSetLastMessages = async (users: User[], currentUser: User) => {
+    const fetchAndSetLastMessagesAndStatus = async (users: User[], currentUser: User) => {
       for (let user of users) {
         try {
           const lastMessage = await fetchLastMessage(currentUser.id, user.id);
@@ -241,7 +300,17 @@ export default defineComponent({
           console.error(`获取用户 ${user.id} 的最后一条消息失败:`, error);
         }
       }
+      if (socket.value) {
+        // 连接成功后请求当前在线用户的状态
+        const requestMessage = {
+          type: 'getOnlineStatus',  // 请求类型
+          data: null  // 可以根据需求添加附加数据（如果有）
+        };
+        // 发送请求获取在线状态信息
+        socket.value.send(JSON.stringify(requestMessage));
+      }
     };
+
 
     // 建立 WebSocket 连接
     const connectSocket = () => {
@@ -250,26 +319,27 @@ export default defineComponent({
       socket.value = new WebSocket(socketUrl);
 
       socket.value.onopen = () => {
+        if (!socket.value) return;
         console.log('WebSocket连接成功');
+
       };
 
       socket.value.onmessage = (msg) => {
         if (msg.data) {
-          const message: Message = JSON.parse(msg.data);
-          if (!message.content) return;
-
-          if (message.fromUserId === currentUser.value.id && message.toUserId === chatUser.value.id) { // 自己发送
-            messages.value.push(message);
-            nextTick(() => {
-              scrollToBottom(); // 新消息滚动到最底部
-            });
-          } else if (message.fromUserId === chatUser.value.id && message.toUserId === currentUser.value.id) { // 对方发送
-            messages.value.push(message);
-            newMessage.value = true;
+          const message: WSMessage = JSON.parse(msg.data);
+          if (!message) return;
+          console.log('message:', message)
+          // 判断消息类型是否为在线状态更新
+          if (message.type === 'status') {
+            // 处理在线状态更新
+            handleOnlineStatusUpdate(message.data);
+          } else {
+            // 处理其他消息（文本、图片等）
+            handleChatMessage(message.data);
           }
 
           // 更新未读消息数
-          if (chatUser.value.id === message.fromUserId) {
+          if (chatUser.value.id === message.data.fromUserId) {
             // 是当前聊天，重置未读消息数
             setUnReadNum(currentUser.value.id, chatUser.value.id);
           } else {
@@ -277,7 +347,8 @@ export default defineComponent({
             loadUnReadNum(currentUser.value.id);
           }
           // 更新特定用户的最后一条消息
-          updateLastMessage(message);
+          updateLastMessage(message.data);
+
         }
       };
 
@@ -289,21 +360,71 @@ export default defineComponent({
         console.error('WebSocket连接错误:', error);
       };
     };
+
+    // 处理在线状态更新
+    const handleOnlineStatusUpdate = (userStatus: { [key: string]: boolean }) => {
+      console.log('handleOnlineStatusUpdate:', userStatus);
+
+      // 遍历用户状态
+      Object.keys(userStatus).forEach((username) => {
+        const isOnline = userStatus[username];
+
+        if (isOnline) {
+          // 用户上线，添加到在线用户列表
+          const userExists = onlineUsers.value.some(user => user.username === username);
+          if (!userExists) {
+            const user = finalUsers.value.find(u => u.username === username);
+            if (user) {
+              user.isOnline = true;
+              onlineUsers.value.push(user);
+            }
+          }
+        } else {
+          // 用户下线，从在线用户列表移除
+          const userIndex = onlineUsers.value.findIndex(user => user.username === username);
+          if (userIndex !== -1) {
+            const user = onlineUsers.value[userIndex];
+            user.isOnline = false;
+            onlineUsers.value.splice(userIndex, 1);
+          }
+        }
+      });
+    };
+
+
+
+    // 处理其他消息（文本、图片等）
+    const handleChatMessage = (message: Message) => {
+      if (message.fromUserId === currentUser.value.id && message.toUserId === chatUser.value.id) {
+        // 自己发送的消息
+        messages.value.push(message);
+        nextTick(() => {
+          scrollToBottom(); // 新消息滚动到最底部
+        });
+      } else if (message.fromUserId === chatUser.value.id && message.toUserId === currentUser.value.id) {
+        // 对方发送的消息
+        messages.value.push(message);
+        newMessage.value = true;
+      }
+    };
+
     // 更新特定用户的最后一条消息
     const updateLastMessage = (message: Message) => {
       // 获取所有的用户，包括管理员和普通用户
-      const users = [...adminUsers.value, ...normalUsers.value];
+      const users = [...finalUsers.value];
 
       // 更新发送者的最后一条消息
       const sender = users.find(u => u.id === message.fromUserId);
       if (sender) {
-        sender.lastMessage = message;
+        sender.lastMessage = { ...message }; // 创建新副本，避免修改原对象
+
       }
 
       // 更新接收者的最后一条消息
       const receiver = users.find(u => u.id === message.toUserId);
       if (receiver) {
-        receiver.lastMessage = message;
+        receiver.lastMessage = { ...message }; // 创建新副本，避免修改原对象
+  
       }
     };
 
@@ -320,13 +441,11 @@ export default defineComponent({
     const customUpload = async (options: any) => {
       const { file, onSuccess, onError } = options;
       try {
-        const url = await uploadImage(file); // 上传图片并获取 URL
-        onSuccess(url);
+        const url = await uploadImage(file);
+        await onSuccess(url);
         handleFile(url);
-        ElMessage.success('文件上传成功');
       } catch (error) {
         onError(error);
-        ElMessage.error('文件上传失败');
       }
     };
 
@@ -336,41 +455,62 @@ export default defineComponent({
         ElMessage.error('WebSocket not connected');
         return;
       }
-      const message = getMessage('img'); // 获取图片消息模板
+
+      // 获取图片消息模板
+      const message = getMessage('img');
       if (!message) return;
+
       message.content = url; // 使用上传后的 URL 作为消息内容
       const extName = url.split('.').pop();
       const validImageExtensions = ['png', 'jpg', 'jpeg', 'gif', 'bmp', 'tiff', 'svg', 'webp'];
+
+      // 判断文件类型
       if (validImageExtensions.includes(extName || '')) {
         message.type = 'img'; // 标记为图片类型
       } else {
         message.type = 'file'; // 如果是其他类型，标记为文件类型
       }
+      // 包装外层类型
+      const wsMessage = {
+        type: 'chat', // 外层包裹 type 字段，表示这是一个文件上传消息
+        data: message // 内部包含实际的消息内容
+      };
+      console.log('wrapmesage', wsMessage)
       // 发送消息
-      socket.value.send(JSON.stringify(message));
+      socket.value.send(JSON.stringify(wsMessage));
     };
 
-    //发送消息
+
+    // 发送消息
     const send = () => {
       // 确保选择了聊天对象
       if (!chatUser.value || chatUser.value.id === 0) {
         ElMessage.error('请选择聊天对象');
         return;
       }
+
+      // 获取消息对象
+      const message = getMessage('text');
+      if (!message) return;
+
+      // 包装消息为符合 WebSocket 后端接口要求的结构
+      const wsMessage = {
+        type: 'chat',  // 消息类型（这里是文本消息）
+        data: message  // 消息内容，data 字段包含实际的聊天消息
+      };
+
       // 发送消息
       if (socket.value) {
-        const message = getMessage('text');
-        if (!message) return;
-        socket.value.send(JSON.stringify(message));  // 通过 WebSocket 发送消息
+        socket.value.send(JSON.stringify(wsMessage));  // 通过 WebSocket 发送消息
       }
     };
 
 
 
 
+
     //获取消息内容
     const getMessage = (type: string) => {
-      console.log('获取消息内容', messages.value);
       // 确保消息内容不为空
       const contentEditable = document.getElementById('im-content') as HTMLElement;
       let messageContent = contentEditable ? contentEditable.innerHTML : '';
@@ -533,6 +673,7 @@ export default defineComponent({
       defaultAvatar,
       currentUser,
       adminUsers,
+      myFriends,
       normalUsers,
       chatUser,
       text,
@@ -629,12 +770,36 @@ export default defineComponent({
   background-color: #f0f0f0;
 }
 
+.user-left {
+  position: relative;
+  margin-right: 10px;
+}
 
 .user-avatar {
   width: 40px;
   height: 40px;
   border-radius: 50%;
+  object-fit: cover;
 }
+
+/* 在线徽章样式 */
+.online-badge {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  width: 13px;
+  /* 徽章直径 */
+  height: 13px;
+  /* 徽章直径 */
+  background-color: green;
+  /* 在线状态颜色 */
+  border-radius: 50%;
+  border: 2px solid white;
+  /* 为徽章添加白色边框，使其更明显 */
+  transform: translate(20%, 20%);
+  /* 让徽章与头像有一半重叠 */
+}
+
 
 .user-info {
   flex: 1;

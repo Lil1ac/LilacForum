@@ -45,7 +45,6 @@ public class ImSingleController {
         if (unReadNums == null) {
             return Result.error("No unread messages found");  // 如果没有未读消息，返回错误信息
         }
-        log.info("unReadNums: {}", unReadNums.size());
         return Result.success(unReadNums);  // 返回包含未读消息数的 Map
     }
 
@@ -62,7 +61,6 @@ public class ImSingleController {
     //获取最近一条消息
     @GetMapping("/lastMessage")
     public Result getLastMessage(@RequestParam Integer fromUserId, @RequestParam Integer toUserId) {
-        log.info("getLastMessage fromUserId: {}, toUserId: {}", fromUserId, toUserId);
         ImSingle imSingle = imSingleServiceImpl.getLastMessage(fromUserId, toUserId);
         if (imSingle == null) {
             return Result.error("No message found");

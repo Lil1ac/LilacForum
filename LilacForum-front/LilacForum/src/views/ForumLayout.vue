@@ -30,6 +30,19 @@
             <img :src="avatar" alt="User Avatar" class="user-avatar" />
             <span class="username">{{ username }}</span>
           </div>
+
+
+          <el-button @click="goToNotifications" class="notification-button">
+            <el-icon class="notification-icon">
+              <Bell />
+            </el-icon>
+            <!-- 只有当 notificationCount 大于 0 时，才显示 el-badge -->
+            <el-badge v-if="notificationCount > 0" :value="notificationCount" class="item"></el-badge>
+          </el-button>
+
+
+
+
           <!-- 下拉菜单 -->
           <el-dropdown type="primary" trigger="click" @command="handleCommand">
             <el-icon class="arrow-down-icon">
@@ -66,9 +79,9 @@ import { ref, computed, onMounted } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
 import { useUserStore } from '@/stores/userStore';
 import { getUserInfo } from '@/api/user';
-import { ArrowDown, EditPen, SwitchButton, User } from '@element-plus/icons-vue';
+import { ArrowDown, EditPen, SwitchButton, User, Bell } from '@element-plus/icons-vue';
 import { ElMessage } from 'element-plus';
-
+import { getNotificationCount } from '@/api/notification';
 // 使用 Pinia store
 const userStore = useUserStore();
 const router = useRouter();
@@ -84,6 +97,7 @@ const activeMenu = computed(() => router.currentRoute.value.name as string);
 const searchQuery = ref('');
 const searchMode = ref('title');
 
+const notificationCount = ref<number>(0); // 默认的通知数量，你可以根据实际逻辑从后端获取
 // 处理菜单项选择
 const handleMenuSelect = (index: string) => {
   const routeMap: { [key: string]: string } = {
@@ -145,9 +159,30 @@ const fetchUserInfo = async () => {
       if (userData.username && userData.avatar) {
         userStore.setUserInfo(userId, userData.username, userData.avatar, userData.role);
       }
+      fetchNotificationCount();
     }
   } catch (error) {
     console.error('获取用户信息失败:', error);
+  }
+};
+
+
+// 跳转到通知页面
+const goToNotifications = () => {
+  router.push({ name: 'Notification' });  // 假设通知页面的路由名称是 'Notifications'
+};
+
+
+//获取通知数量
+const fetchNotificationCount = async () => {
+  try {
+    if (!userStore.userId) {
+      return;
+    }
+    const count = await getNotificationCount(userStore.userId);
+    notificationCount.value = count;
+  } catch (error) {
+    console.error('获取通知数量失败:', error);
   }
 };
 
@@ -249,6 +284,27 @@ onMounted(() => {
   font-size: 16px;
   font-weight: 500;
 }
+
+.notification-button {
+  margin-right: 10px;
+  font-size: 18px;
+  background-color: transparent; /* 背景透明 */
+  border: none; /* 移除边框 */
+  display: flex;
+  align-items: center;
+}
+
+.notification-icon {
+  font-size: 20px;
+  background-color: #fff;  /* 设置铃铛背景色 */
+  padding: 5px; /* 给图标添加内边距，避免背景色过于紧凑 */
+  border-radius: 50%; /* 圆形背景 */
+}
+
+.item {
+  margin-left: 5px;
+}
+
 
 .arrow-down-icon {
   cursor: pointer;

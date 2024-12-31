@@ -10,10 +10,12 @@
 
     <!-- 获取指定用户的所有通知 -->
     <select id="getNotifications" resultType="com.lilac.pojo.Notification">
-        SELECT * FROM notification
+        SELECT id, user_id, type, content, is_read, created_at
+        FROM notification
         WHERE user_id = #{userId}
-        ORDER BY created_at DESC;
+        ORDER BY created_at DESC
     </select>
+
 
     <!-- 更新通知的状态 -->
     <update id="updateNotificationStatus">
@@ -27,4 +29,8 @@
         DELETE FROM notification WHERE id = #{notificationId};
     </delete>
 
+    <!-- 获取未读通知的数量 -->
+    <select id="getNotificationCount" resultType="java.lang.Integer">
+        SELECT COUNT(*) FROM notification WHERE user_id = #{userId} AND is_read = 0;
+    </select>
 </mapper>

@@ -13,11 +13,13 @@ public interface NotificationMapper {
     void insertNotification(Notification notification);
 
     // 获取指定用户的所有通知
-    List<Notification> getNotifications(Integer userId);
+    List<Notification> getNotifications(Integer userId, String sortBy);
 
     // 更新通知的状态（已读/未读）
-    void updateNotificationStatus(@Param("notificationId") Integer notificationId, @Param("isRead") boolean isRead);
+    void updateNotificationStatus(Integer notificationId,boolean isRead);
 
     // 删除指定通知
     void deleteNotification(Integer notificationId);
+
+    Integer getNotificationCount(Integer userId);
 }

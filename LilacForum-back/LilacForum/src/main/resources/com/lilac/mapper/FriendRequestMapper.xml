@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.lilac.mapper.FriendRequestMapper">
+
+    <resultMap id="FriendReqRequestResultMap" type="com.lilac.dto.FriendReqRequest">
+        <!-- FriendReqRequest 的字段 -->
+        <result property="id" column="id"/>
+        <result property="senderId" column="sender_id"/>
+        <result property="receiverId" column="receiver_id"/>
+        <result property="status" column="status"/>
+        <result property="createdAt" column="created_at"/>
+        <result property="updatedAt" column="updated_at"/>
+        <result property="content" column="content"/>
+
+        <!-- 嵌套的 User 对象 -->
+        <association property="sender" javaType="com.lilac.pojo.User">
+            <!-- 这里将整个 User 类的字段映射到 User 对象的属性中 -->
+            <result property="id" column="user_id"/>
+            <result property="username" column="username"/>
+            <result property="avatar" column="avatar"/>
+            <result property="email" column="email"/>
+            <result property="gender" column="gender"/>
+            <result property="age" column="age"/>
+            <result property="profession" column="profession"/>
+            <result property="hobby" column="hobby"/>
+            <result property="bio" column="bio"/>
+        </association>
+    </resultMap>
+
+    <select id="getPendingRequests" resultMap="FriendReqRequestResultMap">
+        SELECT fr.*, u.id AS user_id, u.username, u.avatar, u.email, u.gender, u.age, u.profession, u.hobby, u.bio
+        FROM friend_request fr
+                 JOIN user u ON fr.sender_id = u.id
+        WHERE fr.receiver_id = #{receiverId}
+          AND fr.status = 'pending'
+    </select>
+
+
+
+    <!-- 获取好友请求详情 -->
+    <select id="getRequestById" resultType="com.lilac.pojo.FriendReq">
+        SELECT *
+        FROM friend_request
+        WHERE id = #{id}
+    </select>
+
+
+    <!--根据 sender_id 和 receiver_id 获取好友请求-->
+    <select id="getRequestBySenderAndReceiver" resultType="com.lilac.pojo.FriendReq">
+        SELECT *
+        FROM friend_request
+        WHERE sender_id = #{senderId}
+          AND receiver_id = #{receiverId}
+    </select>
+
+    <!-- 创建新的好友请求 -->
+    <insert id="createRequest" parameterType="com.lilac.pojo.FriendReq">
+        INSERT INTO friend_request (sender_id, receiver_id, status, created_at, updated_at, content)
+        VALUES (#{senderId}, #{receiverId}, #{status}, NOW(), NOW(), #{content})
+    </insert>
+
+    <!-- 更新好友请求的状态（接受/拒绝） -->
+    <update id="updateRequestStatus">
+        UPDATE friend_request
+        SET status = #{status}, updated_at = NOW()
+        WHERE id = #{id}
+    </update>
+
+    <!-- 删除好友请求 -->
+    <delete id="deleteRequestById" parameterType="int">
+        DELETE
+        FROM friend_request
+        WHERE id = #{id}
+    </delete>
+
+    <delete id="deleteRequestBySenderAndReceiver">
+        DELETE
+        FROM friend_request
+        WHERE (sender_id = #{senderId} AND receiver_id = #{receiverId})
+        or (sender_id = #{receiverId} AND receiver_id = #{senderId})
+    </delete>
+
+
+
+</mapper>

@@ -1,9 +1,9 @@
 spring:
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
-    url: jdbc:mysql://localhost:3306/lilacforum
+    url: jdbc:mysql://101.37.252.85:3306/lilacforum
 #    101.37.252.85
-    username: root
+    username: lilac
     password: 3458
   servlet:
     multipart:
@@ -20,7 +20,7 @@ cors:
 
 mybatis:
   configuration:
-#    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
     map-underscore-to-camel-case: true
 
 aliyun:
@@ -31,4 +31,4 @@ aliyun:
 logging:
   level:
     org.springframework.jdbc.support.JdbcTransactionManager: debug
-#    com.zaxxer.hikari: debug
+    com.zaxxer.hikari: debug

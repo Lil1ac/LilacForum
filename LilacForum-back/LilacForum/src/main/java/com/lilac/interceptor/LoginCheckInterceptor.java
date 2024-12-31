@@ -18,7 +18,7 @@ public class LoginCheckInterceptor implements HandlerInterceptor {
     public boolean preHandle(HttpServletRequest request, HttpServletResponse
             response, Object handler) throws Exception {
         String url = request.getRequestURI();
-        log.info("请求url：{}", url);
+//        log.info("请求url：{}", url);
 
         if (url.contains("login") || url.contains("register")) {
             log.info("登录或注册操作，放行");
@@ -42,7 +42,7 @@ public class LoginCheckInterceptor implements HandlerInterceptor {
             response.getWriter().write(notLogin);
             return false;
         }
-        log.info("令牌合法，放行");
+//        log.info("令牌合法，放行");
         return true;
     }
 }

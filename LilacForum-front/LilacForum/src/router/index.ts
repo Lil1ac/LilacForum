@@ -13,7 +13,7 @@ import SectionDetail from '@/views/SectionDetail.vue'; // 具体板块页面
 import PostDetail from '@/views/PostDetail.vue'; // 帖子详情页面
 import SearchResults from '@/views/SearchResults.vue'; // 搜索结果页面
 import MyFriend from '@/views/MyFriend.vue';
-
+import Notification from '@/views/Notification.vue';
 
 const routes = [
   {
@@ -92,6 +92,11 @@ const routes = [
         path: '/myFriend',
         component: MyFriend,
         name: 'MyFriend'
+      },
+      {
+        path: '/notification',
+        component: Notification,
+        name: 'Notification'
       }
     ]
   },

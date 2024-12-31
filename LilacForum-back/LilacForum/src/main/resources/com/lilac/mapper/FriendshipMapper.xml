@@ -3,18 +3,10 @@
 <mapper namespace="com.lilac.mapper.FriendshipMapper">
     <!-- 插入好友请求 -->
     <insert id="insertFriendRequest" parameterType="com.lilac.pojo.Friendship">
-        INSERT INTO friendship (user_id, friend_id, status, created_at, updated_at)
-        VALUES (#{userId}, #{friendId}, #{status}, NOW(), NOW());
+        INSERT INTO friendship (user_id, friend_id, created_at)
+        VALUES (#{userId}, #{friendId}, NOW());
     </insert>
 
-    <!-- 更新好友请求状态 -->
-    <update id="updateFriendshipStatus">
-        UPDATE friendship
-        SET status     = #{status},
-            updated_at = NOW()
-        WHERE user_id = #{userId}
-          AND friend_id = #{friendId};
-    </update>
 
     <!-- 删除好友关系 -->
     <delete id="deleteFriendship">
@@ -24,22 +16,19 @@
            OR (user_id = #{friendId} AND friend_id = #{userId});
     </delete>
 
-    <!-- 获取用户的所有好友 -->
+    <!-- 获取用户的所有好友（双向） -->
     <select id="getFriends" resultType="com.lilac.pojo.User">
         SELECT u.*
-        FROM user u
-                 JOIN friendship f ON (u.id = f.friend_id)
+        FROM friendship f
+                 JOIN user u ON f.friend_id = u.id
         WHERE f.user_id = #{userId}
-          AND f.status = 'accepted';
+        UNION
+        SELECT u.*
+        FROM friendship f
+                 JOIN user u ON f.user_id = u.id
+        WHERE f.friend_id = #{userId}
     </select>
 
-    <!-- 获取用户的所有好友请求 -->
-    <select id="getFriendRequests" resultType="com.lilac.pojo.Friendship">
-        SELECT *
-        FROM friendship
-        WHERE friend_id = #{userId}
-          AND status = 'pending';
-    </select>
 
     <!-- 获取两人之间的好友关系 -->
     <select id="getFriendship" resultType="com.lilac.pojo.Friendship">
