@@ -9,7 +9,7 @@ import java.util.Map;
 
 public class JwtUtils {
 
-    private static String signKey = "lilac1";
+    private static String signKey = "lilac1";//私钥
     private static Long expire = 43200000L;
 
     /**

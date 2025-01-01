@@ -234,7 +234,7 @@ export default defineComponent({
     const normalUsers = ref<User[]>([]);
     const finalUsers = ref<User[]>([]); // 最终去重后的用户列表
 
-    
+
     const text = ref<string>('');
     const messages = ref<Message[]>([]);
     const socket = ref<WebSocket | null>(null);
@@ -274,10 +274,12 @@ export default defineComponent({
       // 合并三类用户：管理员、好友（排除重复）、普通用户（排除重复）
       finalUsers.value = [...adminUsers.value, ...uniqueFriends, ...uniqueNormalUsers];
       normalUsers.value = uniqueNormalUsers;
-      sortAllUsers();
       // 更新每个用户的最后一条消息和状态
       await fetchAndSetLastMessagesAndStatus(finalUsers.value, currentUser.value);
+
       loadUnReadNum(currentUser.value.id);
+
+      sortAllUsers();
     };
 
     // 按照最后一条消息的时间排序所有用户
@@ -339,21 +341,21 @@ export default defineComponent({
           } else {
             // 处理其他消息（文本、图片等）
             handleChatMessage(message.data);
-          }
-          if (chatUser.value) { //如果正在聊天        
-            // 更新未读消息数
-            if (chatUser.value.id === message.data.fromUserId) {
-              // 是当前聊天，重置未读消息数
-              setUnReadNum(currentUser.value.id, chatUser.value.id);
-            } else {
-              // 非当前聊天，更新未读消息数
-              loadUnReadNum(currentUser.value.id);
+            if (chatUser.value) { //如果正在聊天        
+              // 更新未读消息数
+              if (chatUser.value.id === message.data.fromUserId) {
+                // 是当前聊天，重置未读消息数
+                setUnReadNum(currentUser.value.id, chatUser.value.id);
+              } else {
+                // 非当前聊天，更新未读消息数
+                loadUnReadNum(currentUser.value.id);
+              }
             }
+            // 更新刚刚发送消息用户的最后一条消息
+            updateLastMessage(message.data);
+            sortAllUsers();
           }
-          // 更新刚刚发送消息用户的最后一条消息
-          updateLastMessage(message.data);
         }
-        sortAllUsers();
         nextTick(() => {
           scrollToBottom(); // 新消息滚动到最底部
         });
@@ -847,7 +849,7 @@ export default defineComponent({
   position: absolute;
   bottom: 10px;
   right: 12px;
-  background-color: #ff4d4f;  
+  background-color: #ff4d4f;
   color: #fff;
   font-size: 10px;
   padding: 2px 6px;
