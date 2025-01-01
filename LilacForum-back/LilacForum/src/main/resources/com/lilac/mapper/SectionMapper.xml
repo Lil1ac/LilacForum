@@ -8,6 +8,8 @@
         FROM section
         WHERE id = #{id}
     </select>
+
+    <!-- 查询所有记录 -->
     <select id="getAllSections" resultType="com.lilac.pojo.Section">
         SELECT *
         FROM section

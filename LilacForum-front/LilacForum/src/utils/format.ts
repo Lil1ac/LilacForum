@@ -12,7 +12,6 @@ const stripHtmlTags = (htmlContent: string): string => {
     // 移除其他 HTML 标签
     return withNewlines.replace(/<[^>]*>/g, '').trim();
 };
-
 const formatTime = (time: string): string => {
     const messageDate = new Date(time);
     const currentDate = new Date();
@@ -40,30 +39,16 @@ const formatTime = (time: string): string => {
         return `昨天 ${messageDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
     } else if (isThisWeek) {
         // 如果是本周（除了昨天），返回 "周几" + 时间
-        return messageDate.toLocaleString([], {
-            weekday: 'short',
-            hour: '2-digit',
-            minute: '2-digit'
-        });
+        return `${messageDate.toLocaleString([], { weekday: 'short' })} ${messageDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
     } else if (isThisYear) {
         // 如果是本年，返回 "月/日" + 时间
-        return messageDate.toLocaleString([], {
-            month: '2-digit',
-            day: '2-digit',
-            hour: '2-digit',
-            minute: '2-digit'
-        });
+        return `${messageDate.toLocaleString([], { month: '2-digit', day: '2-digit' })} ${messageDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
     } else {
         // 其他情况，返回完整的日期时间
-        return messageDate.toLocaleString([], {
-            year: 'numeric',
-            month: '2-digit',
-            day: '2-digit',
-            hour: '2-digit',
-            minute: '2-digit'
-        });
+        return `${messageDate.toLocaleString([], { year: 'numeric', month: '2-digit', day: '2-digit' })} ${messageDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
     }
 };
+
 
 
 export default { formatDate, stripHtmlTags, formatTime };

@@ -22,7 +22,7 @@ public class NotificationController {
     @PostMapping("/addNotification")
     public Result addNotification(@RequestBody Notification notification) {
         notificationService.createNotification(notification);
-        return Result.success("通知新增成功");
+        return Result.success();
     }
     // 获取用户的通知列表
     @GetMapping("/getNotifications/{userId}")
@@ -38,7 +38,7 @@ public class NotificationController {
     @PutMapping("/{notificationId}/markAsRead")
     public Result markAsRead(@PathVariable Integer notificationId) {
         notificationService.markAsRead(notificationId);
-        return Result.success("通知已标记为已读");
+        return Result.success();
     }
 
 

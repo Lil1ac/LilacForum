@@ -1,63 +1,60 @@
 <template>
-  <div class="friendship-page">
-    <!-- 添加好友按钮 -->
-    <el-button @click="openAddFriendDialog" type="primary" class="add-friend-btn">添加好友</el-button>
+  <el-drawer title="好友管理" :visible.sync="drawerVisible" size="40%" :before-close="beforeClose">
+    <div class="friendship-page">
+      <!-- 添加好友按钮 -->
+      <el-button @click="openAddFriendDialog" type="primary" class="add-friend-btn">添加好友</el-button>
 
-    <!-- 好友请求列表 -->
-    <el-card v-if="pendingRequests.length > 0" class="card-container">
-      <div class="card-header">好友请求</div>
-      <div class="user-list">
-        <div v-for="request in pendingRequests" :key="request.id" class="user-item">
-          <div class="user-left">
-            <img :src="request.sender.avatar || defaultAvatar" alt="头像" class="user-avatar" />
-          </div>
-          <div class="user-info">
-            <div class="username">{{ request.sender.username }}</div>
-          </div>
-          <div class="actions">
-            <el-button @click="acceptRequest(request.id)" type="success" size="small">接受</el-button>
-            <el-button @click="rejectRequest(request.id)" type="danger" size="small">拒绝</el-button>
+      <!-- 好友请求列表 -->
+      <el-card v-if="pendingRequests.length > 0" class="card-container">
+        <div class="card-header">好友请求</div>
+        <div class="user-list">
+          <div v-for="request in pendingRequests" :key="request.id" class="user-item">
+            <div class="user-left">
+              <img :src="request.sender.avatar || defaultAvatar" alt="头像" class="user-avatar" />
+            </div>
+            <div class="user-info">
+              <div class="username">{{ request.sender.username }}</div>
+            </div>
+            <div class="actions">
+              <el-button @click="acceptRequest(request.id)" type="success" size="small">接受</el-button>
+              <el-button @click="rejectRequest(request.id)" type="danger" size="small">拒绝</el-button>
+            </div>
           </div>
         </div>
-      </div>
-    </el-card>
+      </el-card>
 
-    <!-- 我的好友列表 -->
-    <el-card v-if="friends.length > 0" class="card-container">
-      <div class="card-header">我的好友</div>
-      <div class="user-list">
-        <div v-for="friend in friends" :key="friend.id" class="user-item" @click="goToUserProfile(friend.id)">
-          <div class="user-left">
-            <img :src="friend.avatar || defaultAvatar" alt="头像" class="user-avatar" />
-          </div>
-          <div class="user-info">
-            <div class="username">{{ friend.username }}</div>
-          </div>
-          <div class="actions">
-            <el-button @click="removeFriendFromList(friend.id)" type="danger" size="small">删除</el-button>
+      <!-- 我的好友列表 -->
+      <el-card v-if="friends.length > 0" class="card-container">
+        <div class="card-header">我的好友</div>
+        <div class="user-list">
+          <div v-for="friend in friends" :key="friend.id" class="user-item" @click="goToUserProfile(friend.id)">
+            <div class="user-left">
+              <img :src="friend.avatar || defaultAvatar" alt="头像" class="user-avatar" />
+            </div>
+            <div class="user-info">
+              <div class="username">{{ friend.username }}</div>
+            </div>
+            <div class="actions">
+              <el-button @click="removeFriendFromList(friend.id)" type="danger" size="small">删除</el-button>
+            </div>
           </div>
         </div>
-      </div>
-    </el-card>
+      </el-card>
 
-    <!-- 没有好友时的提示 -->
-    <el-card v-else class="no-friends-card">
-      <div class="no-friends">暂无好友</div>
-    </el-card>
+      <!-- 没有好友时的提示 -->
+      <el-card v-else class="no-friends-card">
+        <div class="no-friends">暂无好友</div>
+      </el-card>
 
-    <!-- 分页组件 -->
-    <pagination
-      :currentPage="currentPage"
-      :pageSize="pageSize"
-      :total="totalFriends"
-      @update:currentPage="handlePageChange"
-      @update:pageSize="handleSizeChange"
-    />
+      <!-- 分页组件 -->
+      <pagination class="pagination" :currentPage="currentPage" :pageSize="pageSize" :total="totalFriends"
+        @update:currentPage="handlePageChange" @update:pageSize="handleSizeChange" />
 
-    <!-- 添加好友对话框 -->
-    <add-friend-dialog v-model="addFriendDialogVisible" :userId="currentUser.id"
-      @update:visible="addFriendDialogVisible = $event" @friendAdded="fetchPendingRequests" />
-  </div>
+      <!-- 添加好友对话框 -->
+      <add-friend-dialog v-model="addFriendDialogVisible" :userId="currentUser.id"
+        @update:visible="addFriendDialogVisible = $event" @friendAdded="fetchPendingRequests" />
+    </div>
+  </el-drawer>
 </template>
 
 <script setup lang="ts">
@@ -91,6 +88,12 @@ const currentUser = ref<User>({
   avatar: userStore.avatar || defaultAvatar,
   role: userStore.role,
 });
+
+const drawerVisible = ref(false);
+const beforeClose = (done: () => void) => {
+  done(); 
+};
+
 
 // 分页相关的状态
 const currentPage = ref(1);
@@ -191,11 +194,13 @@ onMounted(async () => {
 
 <style scoped>
 .friendship-page {
-  width: 1000px;
-  margin: 0 auto;
-  padding: 20px;
+  width: 100%;
+  height: 100%;
+  padding: 30px;
   background-color: #f5f7fa;
 }
+
+
 
 .add-friend-btn {
   margin-bottom: 20px;
@@ -209,7 +214,6 @@ onMounted(async () => {
   margin-bottom: 20px;
   border-radius: 10px;
   background-color: #fff;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
 }
 
 .card-header {
@@ -233,12 +237,14 @@ onMounted(async () => {
   padding: 10px 15px;
   border-bottom: 1px solid #f0f0f0;
   transition: background-color 0.3s, transform 0.2s ease-in-out, box-shadow 0.2s ease;
-  cursor: pointer; /* 显示手形指针 */
+  cursor: pointer;
+
 }
 
 .user-item:hover {
   background-color: #f7f7f7;
-  box-shadow: 0px 4px 12px rgba(0, 0, 0, 0.1); /* 提升阴影效果 */
+  box-shadow: 0px 4px 12px rgba(0, 0, 0, 0.1);
+  /* 提升阴影效果 */
 }
 
 .user-info {
@@ -283,6 +289,10 @@ onMounted(async () => {
 
 .el-button {
   border-radius: 20px;
+}
+
+.pagination {
+  margin-top: 30px;
 }
 
 .el-button--success {

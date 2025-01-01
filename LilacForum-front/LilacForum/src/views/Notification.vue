@@ -1,7 +1,7 @@
 <template>
     <div class="notification-page">
         <!-- 页面标题和操作按钮 -->
-        <el-card class="notification-header" shadow="hover">
+        <el-card class="notification-header">
             <div class="header-title">通知</div>
             <el-button size="small" type="primary" @click="markAllAsRead" class="mark-all-button">
                 标记所有为已读
@@ -43,7 +43,7 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue';
 import { ElMessage } from 'element-plus';
-import { getNotifications, markNotificationAsRead } from '@/api/notification';
+import { getNotificationCount, getNotifications, markNotificationAsRead } from '@/api/notification';
 import { useUserStore } from '@/stores/userStore';
 import type { User } from '@/interface/User';
 import type { Notification } from '@/interface/Notification';
@@ -88,6 +88,7 @@ const fetchNotifications = async () => {
 const markAsRead = async (id: number) => {
     try {
         await markNotificationAsRead(id);
+        await getNotificationCount(currentUser.value.id); 
         const notification = notifications.value.find((item) => item.id === id);
         if (notification) {
             notification.isRead = true;
@@ -100,17 +101,13 @@ const markAsRead = async (id: number) => {
 
 // 标记所有通知为已读
 const markAllAsRead = async () => {
-    try {
-        for (const notification of notifications.value) {
-            if (!notification.isRead) {
-                await markNotificationAsRead(notification.id);
-                notification.isRead = true;
-            }
+    for (const notification of notifications.value) {
+        if (!notification.isRead) {
+            await markNotificationAsRead(notification.id);
+            notification.isRead = true;
         }
-    } catch (error) {
-        ElMessage.error('标记所有通知为已读失败');
-        console.error(error);
     }
+    await getNotificationCount(currentUser.value.id); 
 };
 
 // 处理分页变更
@@ -146,16 +143,10 @@ const getNotificationTitle = (type: string) => {
 
 <style scoped>
 .notification-page {
-    width: 1000px;
-    /* 固定宽度为1000px */
+    max-width: 900px;
     margin: 0 auto;
     padding: 30px;
     background-color: #f6f6f6;
-    /* 浅灰色背景 */
-    border-radius: 20px;
-    /* 圆角效果 */
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-    /* 轻微阴影 */
 }
 
 .notification-header {
@@ -165,23 +156,20 @@ const getNotificationTitle = (type: string) => {
     margin-bottom: 20px;
     background-color: #ffffff;
     padding: 20px;
-    border-radius: 16px;
-    /* 圆角 */
-    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
-    /* 阴影 */
 }
 
 .header-title {
     font-size: 22px;
     font-weight: 600;
     color: #333;
+    margin: 0;
 }
 
 .mark-all-button {
     background-color: #007aff;
     color: white;
-    border-radius: 24px;
     font-weight: 500;
+    padding: 8px 16px;
     transition: background-color 0.3s ease;
 }
 
@@ -194,39 +182,28 @@ const getNotificationTitle = (type: string) => {
 }
 
 .notification-item {
-    margin-bottom: 20px;
     padding: 15px;
     background-color: #ffffff;
-    border-radius: 12px;
-    /* 圆角 */
-    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
-    /* 阴影 */
-    transition: transform 0.3s ease, box-shadow 0.3s ease;
-}
-
-.notification-item:hover {
-    transform: translateY(-5px);
-    /* 鼠标悬停时轻微上升 */
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-    /* 加强阴影 */
+    margin-bottom: 10px;
+    border-bottom: 1px solid #f0f0f0;
 }
 
 .notification-title {
     font-size: 16px;
-    font-weight: 500;
+    font-weight: 600;
     color: #333;
+    margin-bottom: 8px;
 }
 
 .notification-message {
     font-size: 14px;
     color: #555;
-    margin-top: 5px;
+    margin-bottom: 8px;
 }
 
 .notification-time {
     font-size: 12px;
     color: #888;
-    margin-top: 10px;
 }
 
 .no-notifications {
@@ -243,6 +220,7 @@ const getNotificationTitle = (type: string) => {
 .read-button {
     border-radius: 20px;
     font-weight: 500;
+    padding: 6px 12px;
 }
 
 .read-button:disabled {

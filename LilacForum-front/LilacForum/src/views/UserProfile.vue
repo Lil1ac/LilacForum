@@ -190,12 +190,14 @@ watch(posts, () => {
     max-width: 1000px;
     margin: 0 auto;
     padding: 20px;
-    background-color: #f9f9f9;
+    background-color: rgba(249, 249, 249, 0.70);
+
 }
 
 .user-profile-card {
     margin-bottom: 20px;
     border-radius: 8px;
+    border-radius: 0;
 }
 
 .user-profile-header {

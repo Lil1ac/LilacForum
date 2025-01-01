@@ -3,6 +3,7 @@ import request from './request';
 import type { Notification } from '@/interface/Notification';
 import { ElMessage } from 'element-plus';
 import type { PageBean } from '@/interface/PageBean';
+import { useNotificationStore } from '@/stores/notificationStore';
 
 // 获取用户的通知列表（支持分页）
 export const getNotifications = async (
@@ -63,13 +64,15 @@ export const deleteNotification = async (notificationId: number): Promise<boolea
 
 //获取通知数量
 export const getNotificationCount = async (userId: number): Promise<number> => {
+  const notificationStore = useNotificationStore()
   try {
     const response = await request.get(`/notification/count`, {
       params: { userId }
     });
     const result = response.data;
+    notificationStore.setNotificationCount(result.data);
     if (result.code === 1) {
-      return result.data.count;
+      return result.data;
     } else {
       throw new Error(result.msg);
     }

@@ -31,16 +31,16 @@
             <span class="username">{{ username }}</span>
           </div>
 
-
-          <el-button @click="goToNotifications" class="notification-button">
-            <el-icon class="notification-icon">
-              <Bell />
+          <div class="icon-container">
+            <el-badge :value="notificationStore.notificationCount" :show-zero="false">
+              <el-icon @click="goToNotifications" class="notification-icon">
+                <Bell />
+              </el-icon>
+            </el-badge>
+            <el-icon @click="openDrawer" class="friend-icon">
+              <UserFilled />
             </el-icon>
-            <!-- 只有当 notificationCount 大于 0 时，才显示 el-badge -->
-            <el-badge v-if="notificationCount > 0" :value="notificationCount" class="item"></el-badge>
-          </el-button>
-
-
+          </div>
 
 
           <!-- 下拉菜单 -->
@@ -51,7 +51,7 @@
             <template #dropdown>
               <el-dropdown-menu>
                 <el-dropdown-item command="profile" :icon="EditPen">修改信息</el-dropdown-item>
-                <el-dropdown-item command="myFriend" :icon="User">我的好友</el-dropdown-item>
+                <!-- <el-dropdown-item command="myFriend" :icon="User">我的好友</el-dropdown-item> -->
                 <el-dropdown-item command="logout" :icon="SwitchButton">登出</el-dropdown-item>
               </el-dropdown-menu>
             </template>
@@ -71,6 +71,10 @@
         <router-view></router-view>
       </el-main>
     </el-container>
+
+    <!-- 引入 FriendDrawer 组件 -->
+    <MyFriend v-model="drawerVisible" />
+
   </div>
 </template>
 
@@ -79,11 +83,14 @@ import { ref, computed, onMounted } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
 import { useUserStore } from '@/stores/userStore';
 import { getUserInfo } from '@/api/user';
-import { ArrowDown, EditPen, SwitchButton, User, Bell } from '@element-plus/icons-vue';
+import { ArrowDown, EditPen, SwitchButton, UserFilled, Bell } from '@element-plus/icons-vue';
 import { ElMessage } from 'element-plus';
 import { getNotificationCount } from '@/api/notification';
+import MyFriend from './MyFriend.vue';
+import { useNotificationStore } from '@/stores/notificationStore'; // 引入 Notification Store
 // 使用 Pinia store
 const userStore = useUserStore();
+const notificationStore = useNotificationStore();
 const router = useRouter();
 
 // 从 userStore 中获取用户名和头像
@@ -97,7 +104,6 @@ const activeMenu = computed(() => router.currentRoute.value.name as string);
 const searchQuery = ref('');
 const searchMode = ref('title');
 
-const notificationCount = ref<number>(0); // 默认的通知数量，你可以根据实际逻辑从后端获取
 // 处理菜单项选择
 const handleMenuSelect = (index: string) => {
   const routeMap: { [key: string]: string } = {
@@ -125,8 +131,6 @@ const handleSearch = () => {
 }
 
 
-
-
 // 跳转到 UserProfile 页面并显示提示
 const goToUserProfile = () => {
   const userId = userStore.userId;
@@ -145,8 +149,6 @@ const handleCommand = (command: string) => {
     router.push({ name: 'Login' });
   } else if (command === 'profile') {
     router.push({ name: 'Profile' });
-  } else if (command === 'myFriend') {
-    router.push({ name: 'MyFriend' });
   }
 };
 
@@ -180,11 +182,22 @@ const fetchNotificationCount = async () => {
       return;
     }
     const count = await getNotificationCount(userStore.userId);
-    notificationCount.value = count;
+    notificationStore.setNotificationCount(count);
+    console.log('notificationCount:', count);
   } catch (error) {
     console.error('获取通知数量失败:', error);
   }
 };
+
+// 控制 FriendDrawer 的显示
+const drawerVisible = ref(false);
+
+// 打开 FriendDrawer
+const openDrawer = () => {
+  drawerVisible.value = true;
+};
+
+
 
 onMounted(() => {
   fetchUserInfo();
@@ -285,24 +298,34 @@ onMounted(() => {
   font-weight: 500;
 }
 
-.notification-button {
-  margin-right: 10px;
-  font-size: 18px;
-  background-color: transparent; /* 背景透明 */
-  border: none; /* 移除边框 */
+.icon-container {
   display: flex;
+  justify-content: space-between;
   align-items: center;
+  gap: 20px;
 }
 
 .notification-icon {
-  font-size: 20px;
-  background-color: #fff;  /* 设置铃铛背景色 */
-  padding: 5px; /* 给图标添加内边距，避免背景色过于紧凑 */
-  border-radius: 50%; /* 圆形背景 */
+  font-size: 24px;
+  color: #fff;
+  cursor: pointer;
+  transition: transform 0.3s ease;
+  margin-top: 5px;
 }
 
-.item {
-  margin-left: 5px;
+.notification-icon:hover {
+  transform: scale(1.08);
+}
+
+.friend-icon {
+  font-size: 24px;
+  color: #fff;
+  cursor: pointer;
+  transition: transform 0.3s ease;
+}
+
+.friend-icon:hover {
+  transform: scale(1.08);
 }
 
 

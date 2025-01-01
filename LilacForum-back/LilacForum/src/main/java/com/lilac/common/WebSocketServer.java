@@ -172,7 +172,6 @@ public class WebSocketServer implements InitializingBean {
     }
 
     // 向所有客户端广播在线用户列表（包含在线状态）
-    // 向所有客户端广播在线用户列表（包含在线状态）
     private void sendOnlineUsers() {
         try {
             // 获取在线用户并记录其状态（在线/离线）

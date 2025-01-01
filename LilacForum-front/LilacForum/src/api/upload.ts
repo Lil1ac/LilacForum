@@ -18,7 +18,7 @@ export const uploadImage = async (file: File): Promise<string> => {
         throw new Error(result.msg);
       }
     } catch (error) {
-      ElMessage.error('头像上传失败');
+      ElMessage.error('文件上传失败');
       throw error;
     }
   };

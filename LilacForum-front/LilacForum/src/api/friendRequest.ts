@@ -32,7 +32,7 @@ export const getPendingRequests = async (
 
 
 // 发送好友请求
-export const addFriendRequest = async (userId: number, friendId: number, message: string): Promise<void> => {
+export const addFriendRequest = async (userId: number, friendId: number, message?: string): Promise<void> => {
     try {
         const response = await request.post('/friendRequest/sendRequest', {
             senderId: userId,
